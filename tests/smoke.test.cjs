@@ -20,7 +20,7 @@ test('original questions and profiles remain available',()=>{
   const original={active:'אני',profiles:{'אני':{xp:80,streak:2,lastDay:null,answered:10,correct:8,history:{c01:{correct:2,wrong:1}},days:{}}},extra:[]};
   const app=setup({'yoga-quest-v1':JSON.stringify(original)});
   assert.equal(app.run('p().xp'),80);
-  assert.equal(app.run('questions().length'),66);
+  assert.equal(app.run('questions().length'),83);
   assert.equal(app.run('p().history.c01.correct'),2);
 });
 test('all modes render, and poses include adjustment scenarios',()=>{
@@ -121,4 +121,12 @@ test('mixed quiz balances topics and shuffles answer positions',()=>{
  assert.equal(app.run('p().recentQuestions.length'),10);
  const seen=app.run('session.items.every(q=>q.options[q.answer]===questions().find(x=>x.id===q.id).options[questions().find(x=>x.id===q.id).answer])');
  assert.equal(seen,true);
+});
+
+test('Friday 13 November questions are present and cover the four padas',()=>{
+ const app=setup();
+ assert.equal(app.run("questions().filter(q=>q.lesson==='13.11.2026').length"),17);
+ for(const term of ['סמאדהי','סדהנה','ויבהוטי','קאיווליה']){
+  assert.ok(app.run("questions().some(q=>q.id.startsWith('f13') && (q.q.includes("+JSON.stringify(term)+") || q.options.some(o=>o.includes("+JSON.stringify(term)+"))))"));
+ }
 });
