@@ -91,13 +91,18 @@ const POSES=[
  {name:'קוברה',sanskrit:'Bhujangasana',id:'g04',type:'cobra',q:'איזו תנוחה מופיעה באיור?',why:'Bhujangasana היא תנוחת הקוברה.'}
 ];
 function shuffled(a){return a.map(v=>({v,r:Math.random()})).sort((x,y)=>x.r-y.r).map(x=>x.v)}
+const POSE_SCENARIOS=[
+ {type:'dog',q:'בתנוחת כלב מביט מטה, תלמידה מעגלת את הגב כדי ליישר את הברכיים. איזו התאמה אפשר להציע?',options:['כיפוף קל בברכיים והארכת הגב','נעילת ברכיים והעמקת הכפיפה','עצירת נשימה והרחבת הטווח','משיכת הראש בכוח לכיוון הרצפה'],answer:0,id:'pose-adjust-01',why:'אפשר לכופף ברכיים כדי לאפשר התארכות בגב ונשימה נינוחה.'},
+ {type:'cobra',q:'בקוברה תלמיד מרגיש עומס בגב התחתון. מה אפשר להציע?',options:['לעלות גבוה יותר בכל מחיר','להקטין את גובה העלייה ולעבוד בטווח נוח','לעצור את הנשימה בעלייה','ליישר את המרפקים בכוח'],answer:1,id:'pose-adjust-02',why:'בקוברה אפשר להקטין את הטווח ולהימנע מכאב; אם יש כאב מתמשך עוצרים ומתייעצים עם מורה מוסמך.'},
+ {type:'up',q:'בתנוחת ידיים מעלה קשה לתלמידה להרים את הידיים בלי לכווץ את הצוואר. איזו אפשרות עדיפה?',options:['להעלות את הכתפיים בכוח','להחזיק את הנשימה','להקטין את טווח הרמת הידיים ולשמור על נשימה נוחה','לכופף את הצוואר לאחור'],answer:2,id:'pose-adjust-03',why:'טווח מותאם ונשימה נינוחה עדיפים על כפיית המנח.'}
+];
 function startSpecial(mode){
  if(mode==='match'){
   const pairs=shuffled(PAIRS).slice(0,4).map((x,i)=>({left:x[0],right:x[1],id:x[2],key:i}));
   special={mode,pairs,rights:shuffled(pairs),selected:null,matched:[],tries:0,wrong:0,done:false,gained:0,correct:0};
  }else if(mode==='fill'){special={mode,items:shuffled(FILLS).slice(0,5),index:0,feedback:null,gained:0,correct:0,done:false}}
  else if(mode==='order'){special={mode,items:shuffled(ORDERS),index:0,selected:[],feedback:null,gained:0,correct:0,done:false}}
- else{special={mode,items:shuffled(POSES),index:0,feedback:null,gained:0,correct:0,done:false}}
+ else{special={mode,items:shuffled([...POSES,...POSE_SCENARIOS]),index:0,feedback:null,gained:0,correct:0,done:false}}
  tab='special';render();
 }
 function specialRecord(id,ok){
@@ -140,8 +145,8 @@ function chooseOrder(i){
 }
 function choosePose(i){
  if(!special||special.feedback)return;
- const item=special.items[special.index],ok=i===POSES.indexOf(item);special.chosen=i;
- special.feedback={ok,why:item.why,correct:item.sanskrit};
+ const item=special.items[special.index],correct=POSE_SCENARIOS.includes(item)?item.answer:POSES.indexOf(item),ok=i===correct;special.chosen=i;
+ special.feedback={ok,why:item.why,correct:POSE_SCENARIOS.includes(item)?item.options[item.answer]:item.sanskrit};
  specialRecord(item.id,ok);render();
 }
 function nextSpecial(){
@@ -174,7 +179,7 @@ function specialView(){
   html+='<div class="qmeta">שאלה '+(x.index+1)+' מתוך '+x.items.length+'</div><div class="card"><h2 class="question">'+esc(item.q)+'</h2>';
   if(x.mode==='fill')html+='<form onsubmit="event.preventDefault();submitFill()" class="answerfield"><input id="fillAnswer" class="field" autocomplete="off" placeholder="כתבי תשובה" '+(x.feedback?'disabled':'')+'><button class="btn" '+(x.feedback?'disabled':'')+'>בדיקה</button></form>';
   else if(x.mode==='order')html+='<p class="muted">לחצי על הפריטים בסדר הנכון.</p>'+shuffledFixedOrder(item.a).map(z=>'<button class="sequenceitem" '+(x.selected.includes(z.index)||x.feedback?'disabled':'')+' onclick="chooseOrder('+z.index+')">'+esc(z.label)+'</button>').join('')+'<p class="reviewmeta">נבחרו '+x.selected.length+' מתוך '+item.a.length+'</p>';
-  else html+=poseSvg(item.type)+'<div class="stack" style="margin-top:16px">'+POSES.map((pose,i)=>'<button class="option '+(x.feedback?(i===POSES.indexOf(item)?'correct':!x.feedback.ok&&i===x.chosen?'wrong':''):'')+'" '+(x.feedback?'disabled':'')+' onclick="choosePose('+i+')">'+esc(pose.sanskrit)+'</button>').join('')+'</div>';
+  else html+=poseSvg(item.type)+'<div class="stack" style="margin-top:16px">'+(POSE_SCENARIOS.includes(item)?item.options:POSES.map(z=>z.sanskrit)).map((label,i)=>'<button class="option '+(x.feedback?(i===(POSE_SCENARIOS.includes(item)?item.answer:POSES.indexOf(item))?'correct':!x.feedback.ok&&i===x.chosen?'wrong':''):'')+'" '+(x.feedback?'disabled':'')+' onclick="choosePose('+i+')">'+esc(label)+'</button>').join('')+'</div>';
   html+=specialFeedback(x.feedback)+'</div>';
  }
  return html;
