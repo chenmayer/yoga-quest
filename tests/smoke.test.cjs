@@ -133,7 +133,19 @@ test('Friday 13 November questions are present and cover the four padas',()=>{
 
 test('Friday lesson can be practiced independently',()=>{
  const app=setup();
- app.run("begin('friday')");
+ app.run("begin('lesson:13.11.2026')");
  assert.equal(app.run("session.items.length"),10);
  assert.equal(app.run("session.items.every(q=>q.lesson==='13.11.2026')"),true);
+});
+
+test('Tuesday lesson can be practiced independently with preserved original and new questions',()=>{
+ const app=setup();
+ assert.equal(app.run("questions().filter(q=>q.lesson==='10.11.2026').length"),56);
+ app.run("begin('lesson:10.11.2026')");
+ assert.equal(app.run('session.items.length'),10);
+ assert.equal(app.run("session.items.every(q=>q.lesson==='10.11.2026')"),true);
+ assert.ok(app.nodes.app.innerHTML.includes('שאלה'));
+ app.run("selectTab('home')");
+ assert.ok(app.nodes.app.innerHTML.includes('יום שלישי · 10.11'));
+ assert.ok(app.nodes.app.innerHTML.includes('יום שישי · 13.11'));
 });
