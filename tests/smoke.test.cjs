@@ -35,7 +35,7 @@ test('all modes render, and poses include adjustment scenarios',()=>{
 test('correct answers schedule future review, errors reschedule soon',()=>{
   const app=setup();
   app.run("begin('סנסקריט')");
-  app.run("session.items=[questions()[0]];session.index=0;session.chosen=null");
+  app.run("session.items=[questions().find(q=>q.id==='c01')];session.index=0;session.chosen=null");
   app.run('answer(0)');
   assert.equal(app.run('p().xp'),10);
   assert.equal(app.run('p().history.c01.interval'),1);
@@ -86,7 +86,7 @@ test('ordering can undo and reset without grading',()=>{
 });
 test('standard quiz and pose choices are not graded before confirmation',()=>{
  const app=setup();
- app.run("begin('סנסקריט');session.items=[questions()[0]]");
+ app.run("begin('סנסקריט');session.items=[questions().find(q=>q.id==='c01')]");
  app.run('chooseQuiz(0)');
  assert.equal(app.run('p().answered'),0);
  app.run('chooseQuiz(0)');
