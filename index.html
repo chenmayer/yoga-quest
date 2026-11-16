@@ -85,18 +85,12 @@ function selectTab(t){tab=t;session=null;special=null;render()}function stats(){
 function home(){const total=questions().length;return `<div class="card hero"><span class="pill">רמה ${level()}</span><h1>תרגול יומי</h1><div class="row"><span class="muted">${sinceLevel()} / 100 XP לרמה הבאה</span><span class="muted">${total} שאלות במאגר</span></div><div class="meter" style="margin:12px 0;background:#527661"><div style="width:${sinceLevel()}%"></div></div><button class="btn light full" onclick="begin('all')">▶ התרגול היומי · 10 שאלות</button>${stats()}</div><h2 class="section">בחירת משחק</h2><div class="modegrid"><button class="modetile" onclick="begin('all')">❓ <b>טריוויה · כל הנושאים</b><small>10 שאלות מעורבות מכל החומר</small></button><button class="modetile" onclick="startSpecial('match')">🧩 <b>התאמות</b><small>סנסקריט ומשמעויות</small></button><button class="modetile" onclick="startSpecial('fill')">✍️ <b>השלמות</b><small>ללא רמז של תשובות</small></button><button class="modetile" onclick="startSpecial('order')">🔁 <b>סידור רצף</b><small>תנוחות ונשימה</small></button><button class="modetile" onclick="startSpecial('image')">🧘 <b>זיהוי תנוחות</b><small>איורים, שמות והתאמות</small></button></div><div class="card"><div class="row"><b>חזרה מתוזמנת</b><span class="pill">${dueCount()} לחזרה</span></div><p class="muted">שאלות שסיימת בעבר חוזרות במרווחים משתנים לפי הצלחה.</p><button class="btn secondary small" onclick="begin('due')" ${dueCount()?'':'disabled'}>תרגול שאלות לחזרה</button></div><h2 class="section">לתרגל לפי נושא</h2><div class="grid">${topics.map(t=>`<button class="tile" onclick="begin('${t}')"><span class="emoji">${symbols[t]}</span><b>${t}</b><small>${questions().filter(q=>q.topic===t).length} שאלות</small></button>`).join('')}</div><div class="card" style="margin-top:14px"><b>🎯 מה כדאי לחזק?</b><p class="muted">${weakTopic()}</p><button class="btn secondary small" onclick="begin('weak')">תרגול חוזר של שאלות מאתגרות</button></div><p class="footnote">התקדמות נשמרת בדפדפן במכשיר הזה בלבד. שיתוף אמיתי בין טלפונים יצריך התחברות ושמירה בענן.</p>`}
 
 const HOMEWORK=[
- {id:'hw-count',group:'שיעורי בית',title:'תרגול ספירה 1–9 בסנסקריט',detail:'תרגול יומי לפי ההנחיות של שני',source:'instructor'},
- {id:'hw-observe',group:'שיעורי בית',title:'לבחור תנוחה מברכת השמש להתבוננות',detail:'לתרגל התבוננות סקרנית בתנוחה אחת',source:'instructor'},
- {id:'hw-read3',group:'קריאה',title:'קריאה ב״אל עצמי״ — עמ׳ 3',detail:'קריאת רשות לפי הודעת שני',source:'instructor'},
- {id:'hw-read5',group:'קריאה',title:'קריאה ב״אל עצמי״ — עמ׳ 5',detail:'קריאת רשות לפי הודעת שני',source:'instructor'},
- {id:'hw-read8',group:'קריאה',title:'קריאה ב״אל עצמי״ — עמ׳ 8',detail:'קריאת רשות לפי הודעת שני',source:'instructor'},
- {id:'hw-read18',group:'קריאה',title:'קריאה ב״אל עצמי״ — עמ׳ 18',detail:'קריאת רשות לפי הודעת שני',source:'instructor'},
- {id:'hw-ashtanga1',group:'חובות הקורס',title:'סטאז׳ אשטנגה 1 מתוך 3',detail:'התקדמות לפי סיכום הקורס',source:'course'},
- {id:'hw-ashtanga2',group:'חובות הקורס',title:'סטאז׳ אשטנגה 2 מתוך 3',detail:'התקדמות לפי סיכום הקורס',source:'course'},
- {id:'hw-ashtanga3',group:'חובות הקורס',title:'סטאז׳ אשטנגה 3 מתוך 3',detail:'התקדמות לפי סיכום הקורס',source:'course'},
- {id:'hw-vinyasa1',group:'חובות הקורס',title:'סטאז׳ ויניאסה 1 מתוך 1',detail:'התקדמות לפי סיכום הקורס',source:'course'},
- {id:'hw-record',group:'חובות הקורס',title:'לצלם ולשמור מקטעים מהסטאז׳ים',detail:'לפי ההנחיה במחברת',source:'course'},
- {id:'hw-practicum',group:'חובות הקורס',title:'מעקב אחר 3–4 סימולציות פרקטיקום',detail:'המספר המדויק והחלוקה לאשטנגה/ויניאסה טעונים אימות',source:'course'}
+ {id:'hw-ashtanga1',group:'חובות הקורס',title:'סטאז׳ אשטנגה 1 מתוך 3',detail:'לפי סיכום השיעור מ־10.11',source:'course'},
+ {id:'hw-ashtanga2',group:'חובות הקורס',title:'סטאז׳ אשטנגה 2 מתוך 3',detail:'לפי סיכום השיעור מ־10.11',source:'course'},
+ {id:'hw-ashtanga3',group:'חובות הקורס',title:'סטאז׳ אשטנגה 3 מתוך 3',detail:'לפי סיכום השיעור מ־10.11',source:'course'},
+ {id:'hw-vinyasa1',group:'חובות הקורס',title:'סטאז׳ ויניאסה 1 מתוך 1',detail:'לפי סיכום השיעור מ־10.11',source:'course'},
+ {id:'hw-record',group:'חובות הקורס',title:'לצלם ולשמור מקטעים מהסטאז׳ים',detail:'לפי הסיכום: לתעד במקטעי זמן קצרים ולשמור',source:'course'},
+ {id:'hw-practicum',group:'חובות הקורס',title:'מעקב אחרי סימולציות הפרקטיקום',detail:'נרשמו 3–4 סימולציות; המספר המדויק עדיין לא ודאי',source:'course'}
 ];
 function toggleHomework(id){p().homework[id]=!p().homework[id];save();render()}
 function addCustomTask(){
@@ -118,7 +112,21 @@ function homeworkView(){
 }
 
 function weakTopic(){let a=questions().filter(q=>p().history[q.id]?.wrong>0).sort((x,y)=>(p().history[y.id].wrong||0)-(p().history[x.id].wrong||0));return a.length?`כדאי לחזור על ${a[0].topic} — היו שם טעויות בתרגולים קודמים.`:'עדיין אין טעויות שנרשמו. אפשר להתחיל מכל נושא ולגלות מה צריך חיזוק.'}
-function begin(topic){const all=questions();let pool=topic==='all'?all:topic==='weak'?all.filter(q=>p().history[q.id]?.wrong>0):topic==='due'?all.filter(q=>isDue(q)):all.filter(q=>q.topic===topic);if(!pool.length){alert('אין כרגע שאלות מתאימות. אפשר לנסות תרגול יומי.');return}const weighted=pool.map(q=>({q,score:reviewPriority(q)+Math.random()*.12})).sort((a,b)=>b.score-a.score).map(x=>x.q);session={topic,items:weighted.slice(0,Math.min(10,pool.length)),index:0,chosen:null,pending:null,gained:0,correct:0,done:false};tab='quiz';render()}
+function begin(topic){const all=questions();let pool=topic==='all'?all:topic==='weak'?all.filter(q=>p().history[q.id]?.wrong>0):topic==='due'?all.filter(q=>isDue(q)):all.filter(q=>q.topic===topic);if(!pool.length){alert('אין כרגע שאלות מתאימות. אפשר לנסות תרגול יומי.');return}const recent=new Set(p().recentQuestions||[]);
+const weighted=pool.map(q=>({q,score:reviewPriority(q)+(recent.has(q.id)?-5:0)+Math.random()*1.4})).sort((a,b)=>b.score-a.score).map(x=>x.q);
+let selected=[];
+if(topic==='all'){
+ const buckets=Object.fromEntries(topics.map(t=>[t,weighted.filter(q=>q.topic===t)]));
+ const order=shuffled(topics);
+ while(selected.length<Math.min(10,pool.length)){
+  let moved=false;
+  for(const t of order){if(buckets[t].length&&selected.length<10){selected.push(buckets[t].shift());moved=true}}
+  if(!moved)break;
+ }
+ selected=shuffled(selected);
+}else selected=weighted.slice(0,Math.min(10,pool.length));
+p().recentQuestions=selected.map(q=>q.id);save();
+session={topic,items:selected.map(q=>{const indexes=shuffled([0,1,2,3]);return {...q,options:indexes.map(i=>q.options[i]),answer:indexes.indexOf(q.answer)}}),index:0,chosen:null,pending:null,gained:0,correct:0,done:false};tab='quiz';render()}
 function chooseQuiz(i){if(!session||session.chosen!==null)return;session.pending=session.pending===i?null:i;render()}
 function confirmQuiz(){if(!session||session.pending===null||session.chosen!==null)return;answer(session.pending)}
 function answer(i){if(!session||session.chosen!==null)return;const q=session.items[session.index];session.chosen=i;const ok=i===q.answer;const h=p().history[q.id]||{correct:0,wrong:0};h[ok?'correct':'wrong']++;applyReview(h,ok);p().history[q.id]=h;p().answered++;if(ok){p().correct++;p().xp+=10;session.gained+=10;session.correct++}updateStreak();save();render()}
