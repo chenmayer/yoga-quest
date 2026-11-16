@@ -20,7 +20,7 @@ test('original questions and profiles remain available',()=>{
   const original={active:'אני',profiles:{'אני':{xp:80,streak:2,lastDay:null,answered:10,correct:8,history:{c01:{correct:2,wrong:1}},days:{}}},extra:[]};
   const app=setup({'yoga-quest-v1':JSON.stringify(original)});
   assert.equal(app.run('p().xp'),80);
-  assert.equal(app.run('questions().length'),28);
+  assert.equal(app.run('questions().length'),66);
   assert.equal(app.run('p().history.c01.correct'),2);
 });
 test('all modes render, and poses include adjustment scenarios',()=>{
@@ -100,4 +100,25 @@ test('standard quiz and pose choices are not graded before confirmation',()=>{
  assert.equal(app.run('special.chosen'),null);
  app.run('choosePose(0);confirmPose()');
  assert.equal(app.run('p().answered'),2);
+});
+
+test('homework completion is profile-specific and preserved',()=>{
+ const app=setup();
+ app.run("selectTab('homework')");
+ assert.ok(app.nodes.app.innerHTML.includes('שיעורי בית'));
+ app.run("toggleHomework('hw-ashtanga1')");
+ assert.equal(app.run("p().homework['hw-ashtanga1']"),true);
+ app.run("data.profiles['משתמש שני']=fresh();switchProfile('משתמש שני')");
+ assert.equal(app.run("!!p().homework['hw-ashtanga1']"),false);
+ app.run("switchProfile('אני')");
+ assert.equal(app.run("p().homework['hw-ashtanga1']"),true);
+});
+test('mixed quiz balances topics and shuffles answer positions',()=>{
+ const app=setup();
+ app.run("begin('all')");
+ assert.equal(app.run('session.items.length'),10);
+ assert.equal(app.run('new Set(session.items.map(q=>q.topic)).size'),4);
+ assert.equal(app.run('p().recentQuestions.length'),10);
+ const seen=app.run('session.items.every(q=>q.options[q.answer]===questions().find(x=>x.id===q.id).options[questions().find(x=>x.id===q.id).answer])');
+ assert.equal(seen,true);
 });
