@@ -51,9 +51,53 @@ test('fill-in, ordering and image modes record answers',()=>{
   app.run('submitFill()');
   assert.equal(app.run('special.feedback.ok'),true);
   app.run("startSpecial('order');special.items=[ORDERS[0]];special.index=0");
-  app.run('chooseOrder(0);chooseOrder(1);chooseOrder(2)');
+  app.run('chooseOrder(0);chooseOrder(1);chooseOrder(2);confirmOrder()');
   assert.equal(app.run('special.feedback.ok'),true);
   app.run("startSpecial('image');special.items=[POSE_SCENARIOS[0]];special.index=0");
-  app.run('choosePose(0)');
+  app.run('choosePose(0);confirmPose()');
   assert.equal(app.run('special.feedback.ok'),true);
+});
+
+test('matching selections are reversible until explicitly checked',()=>{
+ const app=setup();
+ app.run("startSpecial('match');special.pairs=[{key:0,left:'Adho',right:'מטה',id:'c01'}];special.rights=special.pairs");
+ app.run("chooseMatch('left',0);chooseMatch('right',0)");
+ assert.equal(app.run('p().answered'),0);
+ assert.equal(app.run('special.selected'),0);
+ assert.equal(app.run('special.pendingRight'),0);
+ app.run('clearMatch()');
+ assert.equal(app.run('special.selected'),null);
+ assert.equal(app.run('special.pendingRight'),null);
+ app.run("chooseMatch('left',0);chooseMatch('right',0);confirmMatch()");
+ assert.equal(app.run('p().answered'),1);
+ assert.equal(app.run('special.done'),true);
+});
+test('ordering can undo and reset without grading',()=>{
+ const app=setup();
+ app.run("startSpecial('order');special.items=[ORDERS[0]];special.index=0");
+ app.run("chooseOrder(0);chooseOrder(1);undoOrder()");
+ assert.equal(app.run('special.selected.length'),1);
+ assert.equal(app.run('p().answered'),0);
+ app.run('resetOrder()');
+ assert.equal(app.run('special.selected.length'),0);
+ app.run('chooseOrder(0);chooseOrder(1);chooseOrder(2);confirmOrder()');
+ assert.equal(app.run('special.feedback.ok'),true);
+ assert.equal(app.run('p().answered'),1);
+});
+test('standard quiz and pose choices are not graded before confirmation',()=>{
+ const app=setup();
+ app.run("begin('סנסקריט');session.items=[questions()[0]]");
+ app.run('chooseQuiz(0)');
+ assert.equal(app.run('p().answered'),0);
+ app.run('chooseQuiz(0)');
+ assert.equal(app.run('session.pending'),null);
+ app.run('chooseQuiz(0);confirmQuiz()');
+ assert.equal(app.run('p().answered'),1);
+ app.run("startSpecial('image');special.items=[POSE_SCENARIOS[0]]");
+ app.run('choosePose(0)');
+ assert.equal(app.run('p().answered'),1);
+ app.run('choosePose(0)');
+ assert.equal(app.run('special.chosen'),null);
+ app.run('choosePose(0);confirmPose()');
+ assert.equal(app.run('p().answered'),2);
 });
