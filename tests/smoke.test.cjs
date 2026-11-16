@@ -130,3 +130,10 @@ test('Friday 13 November questions are present and cover the four padas',()=>{
   assert.ok(app.run("questions().some(q=>q.id.startsWith('f13') && (q.q.includes("+JSON.stringify(term)+") || q.options.some(o=>o.includes("+JSON.stringify(term)+"))))"));
  }
 });
+
+test('Friday lesson can be practiced independently',()=>{
+ const app=setup();
+ app.run("begin('friday')");
+ assert.equal(app.run("session.items.length"),10);
+ assert.equal(app.run("session.items.every(q=>q.lesson==='13.11.2026')"),true);
+});
