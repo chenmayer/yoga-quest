@@ -193,7 +193,7 @@ test('coverage map shows both lessons and identifies explicit gaps without confl
  app.run("selectTab('coverage')");
  assert.ok(app.nodes.app.innerHTML.includes('יום שלישי · 10.11'));
  assert.ok(app.nodes.app.innerHTML.includes('יום שישי · 13.11'));
- assert.ok(app.nodes.app.innerHTML.includes('אין עדיין שאלת טריוויה ממוקדת'));
+ assert.ok(app.nodes.app.innerHTML.includes('דורש אימות של כתב היד'));
  assert.ok(app.nodes.app.innerHTML.includes('לא מדד לשליטה'));
 });
 test('each mapped item only counts existing question IDs',()=>{
