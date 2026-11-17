@@ -210,6 +210,7 @@ function cardsView(){
 
 function library(){
  return '<h1>ספריית שיעורים</h1><p class="muted">סיכומים מהמחברת לפי תאריך, עם אפשרות לתרגל את החומר של כל שיעור.</p>'+
+ '<div class="card"><div class="row"><div><b>כרטיסיות סנסקריט</b><p class="muted">'+SANSKRIT_CARDS.length+' מונחים · שני כיווני תרגול</p></div><button class="btn secondary small" onclick="selectTab(\'cards\')">פתיחה</button></div></div>'+
  LESSON_NOTES.map(lesson=>{
  const count=questions().filter(q=>q.lesson===lesson.date).length;
  return '<div class="card lesson-card"><h2>'+esc(lesson.day+' · '+lesson.date)+'</h2><b>'+esc(lesson.title)+'</b><p class="footnote">'+esc(lesson.source)+'</p>'+
