@@ -145,7 +145,7 @@ test('Tuesday lesson can be practiced independently with preserved original and 
  assert.equal(app.run('session.items.length'),10);
  assert.equal(app.run("session.items.every(q=>q.lesson==='10.11.2026')"),true);
  assert.ok(app.nodes.app.innerHTML.includes('שאלה'));
- app.run("selectTab('home')");
+ app.run("selectTab('home');openPractice('lesson')");
  assert.ok(app.nodes.app.innerHTML.includes('יום שלישי · 10.11'));
  assert.ok(app.nodes.app.innerHTML.includes('יום שישי · 13.11'));
 });
@@ -271,4 +271,52 @@ test('legacy answered questions are treated as already seen once',()=>{
  const app=setup({'yoga-quest-v1':JSON.stringify(legacy)});
  assert.equal(app.run('unseenQuestions().length'),app.run('questions().length')-1);
  assert.equal(app.run("p().seenQuiz.c01"),true);
+});
+
+test('home displays four primary practice paths and hides extra games by default',()=>{
+ const app=setup();
+ app.run("selectTab('home')");
+ const html=app.nodes.app.innerHTML;
+ assert.ok(html.includes('שאלות חדשות'));
+ assert.ok(html.includes('תרגול מעורב'));
+ assert.ok(html.includes('לפי נושא'));
+ assert.ok(html.includes('לפי שיעור'));
+ assert.ok(html.includes('<details class="card extra-games">'));
+ assert.ok(!html.includes('כל השאלות במעורבב'));
+ assert.ok(!html.includes('לתרגל לפי נושא'));
+ assert.ok(!html.includes('מפת כיסוי חומר'));
+});
+test('topic picker defers session until topic and length are selected',()=>{
+ const app=setup();
+ app.run("openPractice('topic')");
+ assert.equal(app.run('tab'),'practice-pick');
+ assert.equal(app.run('session'),null);
+ assert.ok(app.nodes.app.innerHTML.includes('סנסקריט'));
+ app.run("pickPracticeTopic('פילוסופיה')");
+ assert.ok(app.nodes.app.innerHTML.includes('20 שאלות'));
+ app.run("begin('פילוסופיה',20)");
+ assert.equal(app.run('session.items.length'),20);
+ assert.ok(app.run("session.items.every(q=>q.topic==='פילוסופיה')"));
+});
+test('lesson and mixed pickers offer full-length practice without home duplication',()=>{
+ const app=setup();
+ app.run("openPractice('lesson');pickPracticeTopic('lesson:10.11.2026')");
+ assert.ok(app.nodes.app.innerHTML.includes('כל השאלות'));
+ app.run("begin('lesson:10.11.2026',true)");
+ assert.equal(app.run('session.items.length'),95);
+ app.run("openPractice('mixed')");
+ assert.ok(app.nodes.app.innerHTML.includes('20 שאלות'));
+ app.run("begin('mixed',20)");
+ assert.equal(app.run('session.items.length'),20);
+ app.run("begin('mixed',true)");
+ assert.equal(app.run('session.items.length'),132);
+});
+test('game access and saved progress survive home redesign',()=>{
+ const app=setup();
+ app.run("toggleHomework('hw-count')");
+ app.run("startSpecial('match')");
+ assert.equal(app.run('special.mode'),'match');
+ app.run("selectTab('home')");
+ assert.equal(app.run("p().homework['hw-count']"),true);
+ assert.ok(app.nodes.app.innerHTML.includes('משחקים נוספים'));
 });
