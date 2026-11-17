@@ -3,8 +3,11 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
-assert.ok(script,'Application script exists');
+const sources=['data/questions.js','data/study.js','data/curriculum.js','data/games.js','assets/app.js'];
+const script=sources.map(path=>fs.readFileSync(path,'utf8')).join('\n;\n');
+for(const path of sources)assert.ok(html.includes('src="'+path+'"'),path+' is included in the HTML');
+assert.ok(html.includes('assets/styles.css'),'Style sheet is linked');
+assert.ok(script.includes('function render()'),'Application script exists');
 function setup(saved){
   const store=new Map(saved?Object.entries(saved):[]);
   const nodes={app:{innerHTML:''},fillAnswer:{value:'מטה'}};
@@ -340,4 +343,67 @@ test('Sanskrit practice can cover every expression in one run',()=>{
  assert.equal(app.run("session.items.every(q=>q.topic==='סנסקריט')"),true);
  const ids=app.run("session.items.filter(q=>q.id.startsWith('sk')).map(q=>q.id)");
  assert.equal(ids.length,46);
+});
+
+test('saved quiz resumes after reload with exact question and selected answer',()=>{
+ const app=setup();
+ app.run("begin('סנסקריט',20)");
+ const id=app.run('session.items[0].id');
+ app.run('chooseQuiz(2)');
+ assert.equal(app.run('session.pending'),2);
+ app.run('pauseQuiz()');
+ assert.equal(app.run('tab'),'home');
+ assert.ok(app.nodes.app.innerHTML.includes('להמשיך מהנקודה שבה עצרת'));
+ const restarted=setup(Object.fromEntries(app.store));
+ restarted.run('resumeQuiz()');
+ assert.equal(restarted.run('tab'),'quiz');
+ assert.equal(restarted.run('session.items[0].id'),id);
+ assert.equal(restarted.run('session.pending'),2);
+ restarted.run('confirmQuiz()');
+ assert.equal(restarted.run('p().answered'),1);
+ const saved=setup(Object.fromEntries(restarted.store));
+ saved.run('resumeQuiz()');
+ assert.equal(saved.run('session.chosen'),2);
+ assert.equal(saved.run('p().answered'),1); // no duplicate award on restore
+});
+test('completed quiz clears resumable state but keeps XP',()=>{
+ const app=setup();
+ app.run("begin('סנסקריט')");
+ app.run("session.items=session.items.slice(0,1)");
+ app.run("answer(session.items[0].answer);next()");
+ assert.equal(app.run('p().activeQuiz'),null);
+ assert.equal(app.run('session.done'),true);
+ assert.equal(app.run('p().xp'),10);
+});
+test('Sanskrit cards support both directions and saved progress',()=>{
+ const app=setup();
+ assert.equal(app.run('SANSKRIT_CARDS.length'),46);
+ app.run("startCards('sanskrit')");
+ assert.equal(app.run('tab'),'cards');
+ assert.ok(app.nodes.app.innerHTML.includes('סנסקריט → עברית'));
+ app.run('flipCard();gradeCard(true)');
+ assert.equal(app.run('cardSession.index'),1);
+ assert.equal(app.run('cardSession.known'),1);
+ app.run('pauseCards()');
+ const saved=setup(Object.fromEntries(app.store));
+ saved.run('resumeCards()');
+ assert.equal(saved.run('cardSession.index'),1);
+ assert.equal(saved.run('cardSession.known'),1);
+ saved.run('pauseCards()');
+ saved.run("startCards('hebrew')");
+ assert.ok(saved.nodes.app.innerHTML.includes('עברית → סנסקריט'));
+ saved.run('flipCard();gradeCard(false)');
+ assert.equal(saved.run('cardSession.again'),1);
+});
+test('lesson library displays sourced notes and practice links',()=>{
+ const app=setup();
+ app.run("selectTab('library')");
+ const view=app.nodes.app.innerHTML;
+ assert.ok(view.includes('ספריית שיעורים'));
+ assert.ok(view.includes('10.11.2026'));
+ assert.ok(view.includes('13.11.2026'));
+ assert.ok(view.includes('טריסטאנה'));
+ assert.ok(view.includes('ארבע הפאדות'));
+ assert.ok(view.includes('מאגר השאלות וייבוא חומר'));
+ assert.ok(view.includes('כל השאלות'));
 });
