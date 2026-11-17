@@ -256,3 +256,19 @@ test('coverage map remains available for internal verification but hidden in nav
  assert.equal(app.run('tab'),'progress');
  assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
 });
+
+test('later mini-game attempts do not consume unshown trivia after migration',()=>{
+ const app=setup();
+ const target=app.run("questions().find(q=>q.id==='c01')");
+ app.run('unseenQuestions()');
+ const before=app.run('unseenQuestions().length');
+ app.run("startSpecial('match');specialRecord('c01',true)");
+ assert.equal(app.run('unseenQuestions().length'),before);
+ assert.equal(app.run("hasSeenQuestion(questions().find(q=>q.id==='c01'))"),false);
+});
+test('legacy answered questions are treated as already seen once',()=>{
+ const legacy={active:'אני',profiles:{'אני':{xp:10,streak:0,lastDay:null,answered:1,correct:1,history:{c01:{correct:1,wrong:0}},days:{}}},extra:[]};
+ const app=setup({'yoga-quest-v1':JSON.stringify(legacy)});
+ assert.equal(app.run('unseenQuestions().length'),app.run('questions().length')-1);
+ assert.equal(app.run("p().seenQuiz.c01"),true);
+});
