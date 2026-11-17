@@ -182,3 +182,21 @@ test('multi-round quizzes avoid the previous session questions when possible',()
  const ids2=app.run("session.items.map(q=>q.id)");
  assert.ok(ids2.every(id=>!ids.includes(id)));
 });
+
+test('coverage map shows both lessons and identifies explicit gaps without conflating mastery',()=>{
+ const app=setup();
+ const counts=app.run('coverageTotals()');
+ assert.ok(counts.total>=45);
+ assert.ok(counts.covered>0);
+ assert.ok(counts.missing>0);
+ assert.equal(counts.covered+counts.missing,counts.total);
+ app.run("selectTab('coverage')");
+ assert.ok(app.nodes.app.innerHTML.includes('יום שלישי · 10.11'));
+ assert.ok(app.nodes.app.innerHTML.includes('יום שישי · 13.11'));
+ assert.ok(app.nodes.app.innerHTML.includes('אין עדיין שאלת טריוויה ממוקדת'));
+ assert.ok(app.nodes.app.innerHTML.includes('לא מדד לשליטה'));
+});
+test('each mapped item only counts existing question IDs',()=>{
+ const app=setup();
+ assert.equal(app.run('COVERAGE_UNITS.every(u=>u.facets.every(f=>f.ids.every(id=>questions().some(q=>q.id===id))))'),true);
+});
