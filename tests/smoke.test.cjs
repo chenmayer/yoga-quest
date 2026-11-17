@@ -20,7 +20,7 @@ test('original questions and profiles remain available',()=>{
   const original={active:'אני',profiles:{'אני':{xp:80,streak:2,lastDay:null,answered:10,correct:8,history:{c01:{correct:2,wrong:1}},days:{}}},extra:[]};
   const app=setup({'yoga-quest-v1':JSON.stringify(original)});
   assert.equal(app.run('p().xp'),80);
-  assert.equal(app.run('questions().length'),119);
+  assert.equal(app.run('questions().length'),132);
   assert.equal(app.run('p().history.c01.correct'),2);
 });
 test('all modes render, and poses include adjustment scenarios',()=>{
@@ -125,7 +125,7 @@ test('mixed quiz balances topics and shuffles answer positions',()=>{
 
 test('Friday 13 November questions are present and cover the four padas',()=>{
  const app=setup();
- assert.equal(app.run("questions().filter(q=>q.lesson==='13.11.2026').length"),25);
+ assert.equal(app.run("questions().filter(q=>q.lesson==='13.11.2026').length"),27);
  for(const term of ['סמאדהי','סדהנה','ויבהוטי','קאיווליה']){
   assert.ok(app.run("questions().some(q=>q.id.startsWith('f13') && (q.q.includes("+JSON.stringify(term)+") || q.options.some(o=>o.includes("+JSON.stringify(term)+"))))"));
  }
@@ -140,7 +140,7 @@ test('Friday lesson can be practiced independently',()=>{
 
 test('Tuesday lesson can be practiced independently with preserved original and new questions',()=>{
  const app=setup();
- assert.equal(app.run("questions().filter(q=>q.lesson==='10.11.2026').length"),84);
+ assert.equal(app.run("questions().filter(q=>q.lesson==='10.11.2026').length"),95);
  app.run("begin('lesson:10.11.2026')");
  assert.equal(app.run('session.items.length'),10);
  assert.equal(app.run("session.items.every(q=>q.lesson==='10.11.2026')"),true);
@@ -199,4 +199,15 @@ test('coverage map shows both lessons and identifies explicit gaps without confl
 test('each mapped item only counts existing question IDs',()=>{
  const app=setup();
  assert.equal(app.run('COVERAGE_UNITS.every(u=>u.facets.every(f=>f.ids.every(id=>questions().some(q=>q.id===id))))'),true);
+});
+
+test('new source-backed questions fill 11 of 12 previously unmapped facets',()=>{
+ const app=setup();
+ const t=app.run('coverageTotals()');
+ assert.equal(t.total,51);
+ assert.equal(t.missing,1);
+ assert.equal(t.covered,50);
+ assert.equal(app.run("questions().filter(q=>q.id.startsWith('gap')).length"),13);
+ assert.equal(app.run("questions().filter(q=>q.id.startsWith('gap')).every(q=>q.options.length===4 && q.coverageId)"),true);
+ assert.equal(app.run("COVERAGE_UNITS.filter(u=>u.lesson==='13.11.2026').flatMap(u=>u.facets).filter(f=>coverageFacetIds(f).length===0).map(f=>f.id).join(',')"),'unit-8-2');
 });
