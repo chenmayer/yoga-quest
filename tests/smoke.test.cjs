@@ -20,7 +20,7 @@ test('original questions and profiles remain available',()=>{
   const original={active:'אני',profiles:{'אני':{xp:80,streak:2,lastDay:null,answered:10,correct:8,history:{c01:{correct:2,wrong:1}},days:{}}},extra:[]};
   const app=setup({'yoga-quest-v1':JSON.stringify(original)});
   assert.equal(app.run('p().xp'),80);
-  assert.equal(app.run('questions().length'),83);
+  assert.equal(app.run('questions().length'),119);
   assert.equal(app.run('p().history.c01.correct'),2);
 });
 test('all modes render, and poses include adjustment scenarios',()=>{
@@ -148,4 +148,37 @@ test('Tuesday lesson can be practiced independently with preserved original and 
  app.run("selectTab('home')");
  assert.ok(app.nodes.app.innerHTML.includes('יום שלישי · 10.11'));
  assert.ok(app.nodes.app.innerHTML.includes('יום שישי · 13.11'));
+});
+
+test('expanded course materials and mini-games have broader coverage',()=>{
+ const app=setup();
+ assert.equal(app.run('PAIRS.length'),25);
+ assert.equal(app.run('FILLS.length'),18);
+ assert.equal(app.run('ORDERS.length'),7);
+ assert.equal(app.run('POSES.length'),7);
+ assert.equal(app.run('POSE_SCENARIOS.length'),9);
+ assert.equal(app.run("questions().filter(q=>q.id.startsWith('exp')).length"),36);
+});
+test('matching avoids repeating the exact previous four terms',()=>{
+ const app=setup();
+ app.run("startSpecial('match')");
+ const a=app.run('special.pairs.map(z=>z.left).join(",")');
+ app.run("startSpecial('match')");
+ const b=app.run('special.pairs.map(z=>z.left).join(",")');
+ assert.notEqual(a,b);
+});
+test('expanded poses support correct recognition and safeguards',()=>{
+ const app=setup();
+ app.run("startSpecial('image');special.items=[POSES[6]];special.index=0");
+ app.run("choosePose(6);confirmPose()");
+ assert.equal(app.run('special.feedback.ok'),true);
+ assert.equal(app.run('p().answered'),1);
+});
+test('multi-round quizzes avoid the previous session questions when possible',()=>{
+ const app=setup();
+ app.run("begin('all')");
+ const ids=app.run("session.items.map(q=>q.id)");
+ app.run("begin('all')");
+ const ids2=app.run("session.items.map(q=>q.id)");
+ assert.ok(ids2.every(id=>!ids.includes(id)));
 });
