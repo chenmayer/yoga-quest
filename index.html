@@ -193,24 +193,6 @@ function coverageTotals(lesson){
  const covered=facets.filter(f=>coverageFacetIds(f).length>0).length;
  return {covered,total:facets.length,missing:facets.length-covered};
 }
-function coverageMap(){
- const totals=coverageTotals();
- const cards=['10.11.2026','13.11.2026'].map(date=>{
- const units=COVERAGE_UNITS.filter(u=>u.lesson===date);
- const t=coverageTotals(date);
- return '<section class="card coverage-lesson"><div class="row"><h2>'+(date==='10.11.2026'?'יום שלישי · 10.11':'יום שישי · 13.11')+'</h2><span class="pill">'+t.covered+'/'+t.total+' סעיפי תוכן</span></div>'+
- '<div class="meter" style="margin:12px 0"><div style="width:'+(t.total?Math.round(t.covered/t.total*100):0)+'%"></div></div>'+
- units.map(unit=>{
-  const uc=unit.facets.filter(f=>coverageFacetIds(f).length>0).length;
-  return '<details class="coverage-unit"><summary><span><b>'+esc(unit.title)+'</b><small>'+uc+' מתוך '+unit.facets.length+' סעיפים עם שאלות</small></span><span aria-hidden="true">⌄</span></summary><div class="coverage-facets">'+unit.facets.map(f=>{
-   const ids=coverageFacetIds(f),present=ids.length>0;
-   return '<div class="coverage-facet"><span class="coverage-dot '+(present?'has':'missing')+'">'+(present?'✓':'–')+'</span><div><b>'+esc(f.name)+'</b><small>'+(present?ids.length+' שאלות טריוויה משויכות':(f.id==='unit-8-2'?'דורש אימות של כתב היד לפני הוספת שאלה':'אין עדיין שאלת טריוויה ממוקדת'))+'</small></div></div>';
-  }).join('')+'</div></details>'
- }).join('')+'</section>';
- }).join('');
- return '<h1>מפת כיסוי חומר</h1><div class="card"><div class="row"><b>כיסוי השאלות לפי סיכומי השיעורים</b><span class="pill">'+totals.covered+' / '+totals.total+'</span></div><div class="meter" style="margin:12px 0"><div style="width:'+(totals.total?Math.round(totals.covered/totals.total*100):0)+'%"></div></div><p class="muted">'+totals.missing+' סעיפי תוכן שדורשים שאלות נוספות.</p><p class="footnote">כיסוי = קיום של לפחות שאלת טריוויה ממוקדת בסעיף. זה לא מדד לשליטה, איכות התשובות או כל מגוון המשחקים. הסעיפים שמופו מבוססים על סיכומי 10.11 ו־13.11; חומר לא ברור לא הושלם בניחוש.</p></div>'+cards+
- '<p class="footnote">מפת הכיסוי נבדקת ומעודכנת כשנוסיף שאלות מהשיעורים הבאים. משימות מנהלתיות של הקורס מוצגות בנפרד בשיעורי הבית.</p>';
-}
 
 function homeworkView(){
  const tasks=[...HOMEWORK,...data.customTasks];
@@ -223,13 +205,18 @@ function homeworkView(){
 
 function weakTopic(){let a=questions().filter(q=>p().history[q.id]?.wrong>0).sort((x,y)=>(p().history[y.id].wrong||0)-(p().history[x.id].wrong||0));return a.length?`כדאי לחזור על ${a[0].topic} — היו שם טעויות בתרגולים קודמים.`:'עדיין אין טעויות שנרשמו. אפשר להתחיל מכל נושא ולגלות מה צריך חיזוק.'}
 function hasSeenQuestion(q){
- // For legacy progress, a previously answered question counts as seen.
- // New questions are marked on first display, not when included in a session.
- return !!(p().seenQuiz&&p().seenQuiz[q.id])||!!p().history[q.id];
+ // One-time migration: legacy history did not distinguish quizzes from mini-games.
+ // After migration, only displaying a trivia question adds it to seenQuiz.
+ if(!p().seenQuizMigrated){
+  p().seenQuiz ||= {};
+  Object.keys(p().history||{}).forEach(id=>{p().seenQuiz[id]=true});
+  p().seenQuizMigrated=true;save();
+ }
+ return !!p().seenQuiz[q.id];
 }
 function unseenQuestions(){return questions().filter(q=>!hasSeenQuestion(q))}
 function markQuestionShown(q){
- p().seenQuiz ||= {};
+ hasSeenQuestion(q);
  if(!p().seenQuiz[q.id]){p().seenQuiz[q.id]=true;save()}
 }
 function questionPool(topic,all){
