@@ -218,12 +218,12 @@ const INITIAL=[
 ];
 const KEY='yoga-quest-v1';const TODAY=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Jerusalem'});const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch{return {}}}
-let data=load();data.profiles ||= {};data.active ||= 'אני';data.extra ||= [];data.homework ||= {};data.customTasks ||= [];data.profiles[data.active] ||= fresh();let tab='home',session=null, importStatus='';let special=null;let practicePick={kind:null,topic:null};
+let data=load();data.profiles ||= {};data.active ||= 'אני';data.extra ||= [];data.homework ||= {};data.customTasks ||= [];data.profiles[data.active] ||= fresh();let tab='home',session=null, importStatus='';let special=null;let practicePick={kind:null,topic:null};let cardSession=null;
 function fresh(){return {xp:0,streak:0,lastDay:null,answered:0,correct:0,history:{},days:{},homework:{}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(data))}function p(){const profile=data.profiles[data.active];profile.homework ||= {};return profile}
 function questions(){return [...INITIAL,...data.extra].map(q=>({...q,lesson:q.lesson||(/^(c\d{2}|n1\d{2})$/.test(q.id)?'10.11.2026':undefined)}))}const topics=['סנסקריט','פילוסופיה','הוראה ואליינמנט','ויניאסה ונשימה'];const symbols={'סנסקריט':'🔤','פילוסופיה':'🧠','הוראה ואליינמנט':'🧘','ויניאסה ונשימה':'🔁'};
 function level(){return Math.floor(p().xp/100)+1}function sinceLevel(){return p().xp%100}
-function selectTab(t){if(t==='coverage')t='progress';tab=t;session=null;special=null;render()}function stats(){return `<div class="stats"><div><b>🔥 ${p().streak}</b><small>ימי רצף</small></div><div><b>✨ ${p().xp}</b><small>XP שנצבר</small></div><div><b>${p().answered?Math.round(100*p().correct/p().answered):0}%</b><small>תשובות נכונות</small></div></div>`}
+function selectTab(t){if(t==='coverage')t='progress';if(session&&!session.done)persistQuiz();if(cardSession&&!cardSession.done)persistCards();tab=t;session=null;special=null;cardSession=null;render()}function stats(){return `<div class="stats"><div><b>🔥 ${p().streak}</b><small>ימי רצף</small></div><div><b>✨ ${p().xp}</b><small>XP שנצבר</small></div><div><b>${p().answered?Math.round(100*p().correct/p().answered):0}%</b><small>תשובות נכונות</small></div></div>`}
 
 const LESSON_CHOICES=[
  {date:'10.11.2026',label:'יום שלישי · 10.11',sub:'אשטנגה · ברכת השמש · אליינמנט ואנטומיה'},
@@ -259,6 +259,7 @@ function home(){
  '<h1>מה מתרגלים היום?</h1><div class="hero-metrics"><div><b>'+seen+' / '+total+'</b><small>שאלות שכבר ראית</small></div><div><b>'+unseen+'</b><small>שאלות חדשות</small></div><div><b>'+p().xp+'</b><small>XP שנצברו</small></div></div>'+
  '<div class="meter" aria-label="התקדמות בצפייה בשאלות"><div style="width:'+(total?Math.round(seen/total*100):0)+'%"></div></div>'+
  '<button class="btn light full" onclick="'+(unseen?"begin('unseen')":"openPractice('mixed')")+'">'+(unseen?'התחלת תרגול · שאלות חדשות':'התחלת תרגול מעורב')+'</button></div>'+
+ (p().activeQuiz?'<div class="card resume-panel"><div class="row"><div><b>להמשיך מהנקודה שבה עצרת</b><p class="muted">שאלה '+(p().activeQuiz.index+1)+' מתוך '+p().activeQuiz.items.length+'</p></div><button class="btn small" onclick="resumeQuiz()">המשך תרגול</button></div><button class="btn outline small" onclick="abandonQuiz()" style="margin-top:10px">מחיקת הסבב השמור</button></div>':'')+
  '<h2 class="section">איך תרצי לתרגל?</h2>'+
  '<div class="modegrid home-choices">'+
  '<button class="modetile" onclick="begin(\'unseen\')" '+(unseen?'':'disabled')+'><span class="mode-icon">✦</span><b>שאלות חדשות</b><small>'+unseen+' שאלות שעוד לא ראית</small></button>'+
@@ -346,6 +347,24 @@ function questionPool(topic,all){
  topic.startsWith('lesson:')?all.filter(q=>q.lesson===topic.slice(7)):
  all.filter(q=>q.topic===topic);
 }
+
+function persistQuiz(){
+ if(!session||session.done)return;
+ p().activeQuiz=JSON.parse(JSON.stringify(session));save();
+}
+function resumeQuiz(){
+ const saved=p().activeQuiz;
+ if(!saved||!Array.isArray(saved.items)||!saved.items.length)return;
+ // Discard invalidated cards from outdated/removed banks rather than corrupting a saved answer.
+ if(!saved.items.every(q=>questions().some(n=>n.id===q.id))){p().activeQuiz=null;save();return}
+ session=JSON.parse(JSON.stringify(saved));special=null;cardSession=null;tab='quiz';render();
+}
+function pauseQuiz(){
+ persistQuiz();session=null;tab='home';render();
+}
+function abandonQuiz(){
+ p().activeQuiz=null;save();session=null;tab='home';render();
+}
 function begin(topic,full=false){
  const all=questions(),pool=questionPool(topic,all);
  if(!pool.length){alert(topic==='unseen'?'כבר צפית בכל שאלות הטריוויה! אפשר לתרגל במצב מעורבב.':'אין כרגע שאלות מתאימות. אפשר לנסות תרגול מעורבב.');return}
@@ -370,15 +389,16 @@ function begin(topic,full=false){
  // Remember recent offered questions for session rotation, but do not count them as seen.
  p().recentQuestions=selected.slice(-10).map(q=>q.id);save();
  session={topic,full,items:selected.map(q=>{const indexes=shuffled([0,1,2,3]);return {...q,options:indexes.map(i=>q.options[i]),answer:indexes.indexOf(q.answer)}}),index:0,chosen:null,pending:null,gained:0,correct:0,done:false};
- tab='quiz';render();
+ tab='quiz';persistQuiz();render();
 }
-function chooseQuiz(i){if(!session||session.chosen!==null)return;session.pending=session.pending===i?null:i;render()}
+function chooseQuiz(i){if(!session||session.chosen!==null)return;session.pending=session.pending===i?null:i;persistQuiz();render()}
+function clearPendingQuiz(){if(!session)return;session.pending=null;persistQuiz();render()}
 function confirmQuiz(){if(!session||session.pending===null||session.chosen!==null)return;answer(session.pending)}
-function answer(i){if(!session||session.chosen!==null)return;const q=session.items[session.index];session.chosen=i;const ok=i===q.answer;const h=p().history[q.id]||{correct:0,wrong:0};h[ok?'correct':'wrong']++;applyReview(h,ok);p().history[q.id]=h;p().answered++;if(ok){p().correct++;p().xp+=10;session.gained+=10;session.correct++}updateStreak();save();render()}
+function answer(i){if(!session||session.chosen!==null)return;const q=session.items[session.index];session.chosen=i;const ok=i===q.answer;const h=p().history[q.id]||{correct:0,wrong:0};h[ok?'correct':'wrong']++;applyReview(h,ok);p().history[q.id]=h;p().answered++;if(ok){p().correct++;p().xp+=10;session.gained+=10;session.correct++}updateStreak();persistQuiz();render()}
 function updateStreak(){let t=TODAY();if(p().lastDay===t)return;const y=new Date(Date.now()-86400000).toLocaleDateString('en-CA',{timeZone:'Asia/Jerusalem'});p().streak=p().lastDay===y?p().streak+1:1;p().lastDay=t;p().days[t]=true}
-function next(){if(session.index===session.items.length-1)session.done=true;else{session.index++;session.chosen=null;session.pending=null}render()}
+function next(){if(!session)return;if(session.index===session.items.length-1){session.done=true;p().activeQuiz=null;save()}else{session.index++;session.chosen=null;session.pending=null;persistQuiz()}render()}
 function quiz(){if(!session)return home();if(session.done)return `<div class="card" style="text-align:center;padding:34px 20px"><div style="font-size:48px">🌟</div><h1>סיכום התרגול</h1><p>ענית נכון על <b>${session.correct}</b> מתוך <b>${session.items.length}</b> שאלות</p><h2 class="strong">+${session.gained} XP</h2><p class="muted">השאלות שבהן טעית יופיעו יותר בתרגולים הבאים.</p><button class="btn full" onclick="begin('${session.topic}',${session.full})">לשחק שוב</button><button class="btn secondary full" style="margin-top:9px" onclick="selectTab('home')">חזרה לבית</button></div>`;
-const q=session.items[session.index],c=session.chosen,done=c!==null;markQuestionShown(q);return `<div class="row"><button class="close" aria-label="סגירה" onclick="selectTab('home')">×</button><span class="pill">✨ +${session.gained} XP</span></div><div class="qmeta" style="margin-top:12px"><span>שאלה ${session.index+1} מתוך ${session.items.length}</span><span>${esc(q.topic)}</span></div><div class="meter"><div style="width:${session.index/session.items.length*100}%"></div></div><div class="card" style="margin-top:18px"><div class="row"><span class="tag">${q.source==='course'?'📚 מתוך חומר הקורס':'🌱 ידע משלים'}</span><span class="muted">10 XP לתשובה נכונה</span></div><h1 class="question">${esc(q.q)}</h1><div class="stack">${q.options.map((o,i)=>`<button class="option ${done?(i===q.answer?'correct':i===c?'wrong':''):(session.pending===i?'pending':'')}" aria-pressed="${!done&&session.pending===i}" ${done?'disabled':''} onclick="chooseQuiz(${i})">${done&&i===q.answer?'✓ ':''}${esc(o)}</button>`).join('')}</div>${!done?`<div class="actionrow"><button class="btn secondary" ${session.pending===null?'disabled':''} onclick="session.pending=null;render()">ביטול בחירה</button><button class="btn" ${session.pending===null?'disabled':''} onclick="confirmQuiz()">בדיקת תשובה</button></div>`:''}${done?`<div class="feedback ${c===q.answer?'':'wrong'}"><strong>${c===q.answer?'תשובה נכונה':'תשובה לא נכונה'}</strong><div>${esc(q.why)}</div></div><button class="btn full" onclick="next()">${session.index===session.items.length-1?'סיום התרגול':'השאלה הבאה ←'}</button>`:''}</div>`}
+const q=session.items[session.index],c=session.chosen,done=c!==null;markQuestionShown(q);return `<div class="row"><button class="close" aria-label="סגירה" onclick="pauseQuiz()" title="שמירה ויציאה">×</button><span class="pill">✨ +${session.gained} XP</span></div><div class="qmeta" style="margin-top:12px"><span>שאלה ${session.index+1} מתוך ${session.items.length}</span><span>${esc(q.topic)}</span></div><div class="meter"><div style="width:${session.index/session.items.length*100}%"></div></div><div class="card" style="margin-top:18px"><div class="row"><span class="tag">${q.source==='course'?'📚 מתוך חומר הקורס':'🌱 ידע משלים'}</span><span class="muted">10 XP לתשובה נכונה</span></div><h1 class="question">${esc(q.q)}</h1><div class="stack">${q.options.map((o,i)=>`<button class="option ${done?(i===q.answer?'correct':i===c?'wrong':''):(session.pending===i?'pending':'')}" aria-pressed="${!done&&session.pending===i}" ${done?'disabled':''} onclick="chooseQuiz(${i})">${done&&i===q.answer?'✓ ':''}${esc(o)}</button>`).join('')}</div>${!done?`<div class="actionrow"><button class="btn secondary" ${session.pending===null?'disabled':''} onclick="clearPendingQuiz()">ביטול בחירה</button><button class="btn" ${session.pending===null?'disabled':''} onclick="confirmQuiz()">בדיקת תשובה</button></div>`:''}${done?`<div class="feedback ${c===q.answer?'':'wrong'}"><strong>${c===q.answer?'תשובה נכונה':'תשובה לא נכונה'}</strong><div>${esc(q.why)}</div></div><button class="btn full" onclick="next()">${session.index===session.items.length-1?'סיום התרגול':'השאלה הבאה ←'}</button>`:''}</div>`}
 function progress(){return `<h1>ההתקדמות שלי</h1><div class="card">${stats()}<div style="margin-top:19px"><b>רמה ${level()}</b><div class="meter" style="margin-top:9px"><div style="width:${sinceLevel()}%"></div></div></div></div><h2 class="section">שליטה לפי נושא</h2>${topics.map(t=>{let qs=questions().filter(q=>q.topic===t),attempts=qs.reduce((s,q)=>s+(p().history[q.id]?.correct||0)+(p().history[q.id]?.wrong||0),0),correct=qs.reduce((s,q)=>s+(p().history[q.id]?.correct||0),0),seen=qs.filter(q=>p().history[q.id]).length;return `<div class="card"><div class="row"><b>${symbols[t]} ${t}</b><span class="muted">${qs.filter(hasSeenQuestion).length}/${qs.length} שאלות שנראו</span></div><div class="meter" style="margin:12px 0"><div style="width:${attempts?Math.round(correct/attempts*100):0}%"></div></div><div class="muted">${attempts?Math.round(correct/attempts*100)+'% הצלחה ('+attempts+' ניסיונות)':'עוד לא תרגלת את הנושא'}</div></div>`}).join('')}<p class="footnote">המדדים מבוססים על ניסיונות עד כה; הם לא תחליף להערכת הבנה בהוראה מעשית.</p>`}
 function community(){let ranks=Object.entries(data.profiles).sort((a,b)=>b[1].xp-a[1].xp);return `<h1>קהילה</h1><div class="card"><b>פרופילים במכשיר הזה</b><p class="muted">גרסת הדגמה: אפשר לעבור בין פרופילים במכשיר אחד. שיתוף דירוג חי בין חברי הקורס יתווסף עם התחברות לענן.</p><label for="profile">הפרופיל הפעיל</label><select class="field" id="profile" onchange="switchProfile(this.value)">${Object.keys(data.profiles).map(n=>`<option ${n===data.active?'selected':''}>${esc(n)}</option>`).join('')}</select><label for="newProfile">הוספת פרופיל מקומי</label><div class="row"><input id="newProfile" class="field" maxlength="30" placeholder="שם התלמיד/ה"><button class="btn" onclick="addProfile()">הוספה</button></div></div><h2 class="section">דירוג מקומי</h2><div class="card">${ranks.map(([n,v],i)=>`<div class="leader"><span>${i+1}. ${esc(n)}</span><strong>${v.xp} XP</strong></div>`).join('')}</div>`}
 function switchProfile(n){if(!data.profiles[n])return;data.active=n;save();render()}function addProfile(){let n=document.getElementById('newProfile').value.trim();if(!n)return alert('נא להזין שם');if(data.profiles[n])return alert('פרופיל בשם הזה כבר קיים');data.profiles[n]=fresh();data.active=n;save();render()}
