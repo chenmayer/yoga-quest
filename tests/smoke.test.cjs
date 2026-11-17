@@ -145,7 +145,7 @@ test('Tuesday lesson can be practiced independently with preserved original and 
  assert.equal(app.run('session.items.length'),10);
  assert.equal(app.run("session.items.every(q=>q.lesson==='10.11.2026')"),true);
  assert.ok(app.nodes.app.innerHTML.includes('שאלה'));
- app.run("selectTab('home')");
+ app.run("selectTab('home');openPractice('lesson')");
  assert.ok(app.nodes.app.innerHTML.includes('יום שלישי · 10.11'));
  assert.ok(app.nodes.app.innerHTML.includes('יום שישי · 13.11'));
 });
