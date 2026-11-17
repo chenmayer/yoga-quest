@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-const sources=['data/questions.js','data/study.js','assets/app.js'];
+const sources=['data/questions.js','data/study.js','data/curriculum.js','data/games.js','assets/app.js'];
 const script=sources.map(path=>fs.readFileSync(path,'utf8')).join('\n;\n');
 for(const path of sources)assert.ok(html.includes('src="'+path+'"'),path+' is included in the HTML');
 assert.ok(html.includes('assets/styles.css'),'Style sheet is linked');
