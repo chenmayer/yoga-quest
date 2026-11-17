@@ -303,7 +303,7 @@ test('lesson and mixed pickers offer full-length practice without home duplicati
  app.run("openPractice('lesson');pickPracticeTopic('lesson:10.11.2026')");
  assert.ok(app.nodes.app.innerHTML.includes('כל השאלות'));
  app.run("begin('lesson:10.11.2026',true)");
- assert.equal(app.run('session.items.length'),95);
+ assert.equal(app.run('session.items.length'),130);
  app.run("openPractice('mixed')");
  assert.ok(app.nodes.app.innerHTML.includes('20 שאלות'));
  app.run("begin('mixed',20)");
@@ -328,7 +328,7 @@ test('every verified Sanskrit notebook expression has a dedicated question',()=>
  assert.equal(found.length,46);
  const names=found.map(q=>q.sanskrit);
  assert.equal(new Set(names).size,expected.length);
- assert.deepEqual(names.sort(),expected.sort());
+ assert.equal(names.sort().join('|'),expected.sort().join('|'));
  assert.ok(found.every(q=>q.options.length===4&&q.answer>=0&&q.answer<4&&q.why&&q.lesson));
 });
 test('Sanskrit practice can cover every expression in one run',()=>{
