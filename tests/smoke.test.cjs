@@ -190,11 +190,11 @@ test('coverage map shows both lessons and identifies explicit gaps without confl
  assert.ok(counts.covered>0);
  assert.ok(counts.missing>0);
  assert.equal(counts.covered+counts.missing,counts.total);
- app.run("selectTab('coverage')");
- assert.ok(app.nodes.app.innerHTML.includes('יום שלישי · 10.11'));
- assert.ok(app.nodes.app.innerHTML.includes('יום שישי · 13.11'));
- assert.ok(app.nodes.app.innerHTML.includes('דורש אימות של כתב היד'));
- assert.ok(app.nodes.app.innerHTML.includes('לא מדד לשליטה'));
+ app.run("selectTab('home')");
+ assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
+ app.run("selectTab('progress')");
+ assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
+ assert.equal(app.run('coverageTotals().total'),51);
 });
 test('each mapped item only counts existing question IDs',()=>{
  const app=setup();
@@ -210,4 +210,49 @@ test('new source-backed questions fill 11 of 12 previously unmapped facets',()=>
  assert.equal(app.run("questions().filter(q=>q.id.startsWith('gap')).length"),13);
  assert.equal(app.run("questions().filter(q=>q.id.startsWith('gap')).every(q=>q.options.length===4 && q.coverageId)"),true);
  assert.equal(app.run("COVERAGE_UNITS.filter(u=>u.lesson==='13.11.2026').flatMap(u=>u.facets).filter(f=>coverageFacetIds(f).length===0).map(f=>f.id).join(',')"),'unit-8-2');
+});
+
+test('unseen mode only offers questions that have never appeared and marks on display, not selection',()=>{
+ const app=setup();
+ const bank=app.run('questions().length');
+ assert.equal(app.run('unseenQuestions().length'),bank);
+ app.run("begin('unseen')");
+ assert.equal(app.run('session.items.length'),10);
+ assert.equal(app.run('unseenQuestions().length'),bank-1);
+ const current=app.run('session.items[0].id');
+ assert.equal(app.run('hasSeenQuestion(session.items[0])'),true);
+ const second=app.run('session.items[1].id');
+ assert.equal(app.run('hasSeenQuestion(session.items[1])'),false);
+ app.run("selectTab('home');begin('unseen')");
+ assert.equal(app.run('session.items.some(q=>q.id==='+JSON.stringify(current)+')'),false);
+ // The unshown item may still be selected: only the displayed one is excluded.
+ assert.equal(app.run('p().seenQuiz['+JSON.stringify(second)+']===true'),false);
+});
+test('all questions in a topic can be practiced, with short mode unchanged',()=>{
+ const app=setup();
+ const topic='פילוסופיה';
+ const count=app.run("questions().filter(q=>q.topic==='פילוסופיה').length");
+ assert.ok(count>10);
+ app.run("begin('פילוסופיה',true)");
+ assert.equal(app.run('session.items.length'),count);
+ assert.equal(app.run('session.full'),true);
+ assert.equal(app.run("session.items.every(q=>q.topic==='פילוסופיה')"),true);
+ app.run("begin('פילוסופיה')");
+ assert.equal(app.run('session.items.length'),10);
+});
+test('mixed full mode includes every quiz question once, with fresh order',()=>{
+ const app=setup();
+ const count=app.run('questions().length');
+ app.run("begin('mixed',true)");
+ assert.equal(app.run('session.items.length'),count);
+ assert.equal(app.run('new Set(session.items.map(q=>q.id)).size'),count);
+ app.run("begin('mixed')");
+ assert.equal(app.run('session.items.length'),10);
+});
+test('coverage map remains available for internal verification but hidden in navigation',()=>{
+ const app=setup();
+ assert.equal(app.run('coverageTotals().total'),51);
+ app.run("selectTab('coverage')");
+ assert.equal(app.run('tab'),'progress');
+ assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
 });
