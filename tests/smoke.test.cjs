@@ -407,3 +407,18 @@ test('lesson library displays sourced notes and practice links',()=>{
  assert.ok(view.includes('מאגר השאלות וייבוא חומר'));
  assert.ok(view.includes('כל השאלות'));
 });
+
+test('homework checklist matches instructor screenshot without unrelated legacy tasks',()=>{
+ const app=setup();
+ assert.equal(app.run('HOMEWORK.length'),7);
+ assert.equal(app.run("HOMEWORK.filter(t=>t.group==='לחזרה ולתרגול בבית').length"),3);
+ assert.equal(app.run("HOMEWORK.filter(t=>t.group.includes('אל עצמי')).length"),4);
+ assert.equal(app.run("HOMEWORK.some(t=>t.id==='hw-bring'||t.id==='hw-arrive'||t.id==='hw-email'||t.id==='hw-peers'||t.id==='hw-contact')"),false);
+ app.run("selectTab('homework')");
+ const view=app.nodes.app.innerHTML;
+ for(const phrase of ['בקול או בשירה','איפה אפשר לרכך מאמץ','דרישטי','בנדהות','נשימת אוג׳אי','פתח דבר','מהי יוגה?','אטמן','ברהמן','ההיסטוריה והבסיס הפילוסופי']){
+   assert.ok(view.includes(phrase),phrase);
+ }
+ app.run("toggleHomework('hw-count')");
+ assert.equal(app.run("p().homework['hw-count']"),true);
+});
