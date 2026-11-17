@@ -20,7 +20,7 @@ test('original questions and profiles remain available',()=>{
   const original={active:'אני',profiles:{'אני':{xp:80,streak:2,lastDay:null,answered:10,correct:8,history:{c01:{correct:2,wrong:1}},days:{}}},extra:[]};
   const app=setup({'yoga-quest-v1':JSON.stringify(original)});
   assert.equal(app.run('p().xp'),80);
-  assert.equal(app.run('questions().length'),132);
+  assert.equal(app.run('questions().length'),178);
   assert.equal(app.run('p().history.c01.correct'),2);
 });
 test('all modes render, and poses include adjustment scenarios',()=>{
@@ -125,7 +125,7 @@ test('mixed quiz balances topics and shuffles answer positions',()=>{
 
 test('Friday 13 November questions are present and cover the four padas',()=>{
  const app=setup();
- assert.equal(app.run("questions().filter(q=>q.lesson==='13.11.2026').length"),27);
+ assert.equal(app.run("questions().filter(q=>q.lesson==='13.11.2026').length"),38);
  for(const term of ['סמאדהי','סדהנה','ויבהוטי','קאיווליה']){
   assert.ok(app.run("questions().some(q=>q.id.startsWith('f13') && (q.q.includes("+JSON.stringify(term)+") || q.options.some(o=>o.includes("+JSON.stringify(term)+"))))"));
  }
@@ -140,7 +140,7 @@ test('Friday lesson can be practiced independently',()=>{
 
 test('Tuesday lesson can be practiced independently with preserved original and new questions',()=>{
  const app=setup();
- assert.equal(app.run("questions().filter(q=>q.lesson==='10.11.2026').length"),95);
+ assert.equal(app.run("questions().filter(q=>q.lesson==='10.11.2026').length"),130);
  app.run("begin('lesson:10.11.2026')");
  assert.equal(app.run('session.items.length'),10);
  assert.equal(app.run("session.items.every(q=>q.lesson==='10.11.2026')"),true);
@@ -303,13 +303,13 @@ test('lesson and mixed pickers offer full-length practice without home duplicati
  app.run("openPractice('lesson');pickPracticeTopic('lesson:10.11.2026')");
  assert.ok(app.nodes.app.innerHTML.includes('כל השאלות'));
  app.run("begin('lesson:10.11.2026',true)");
- assert.equal(app.run('session.items.length'),95);
+ assert.equal(app.run('session.items.length'),130);
  app.run("openPractice('mixed')");
  assert.ok(app.nodes.app.innerHTML.includes('20 שאלות'));
  app.run("begin('mixed',20)");
  assert.equal(app.run('session.items.length'),20);
  app.run("begin('mixed',true)");
- assert.equal(app.run('session.items.length'),132);
+ assert.equal(app.run('session.items.length'),178);
 });
 test('game access and saved progress survive home redesign',()=>{
  const app=setup();
@@ -319,4 +319,25 @@ test('game access and saved progress survive home redesign',()=>{
  app.run("selectTab('home')");
  assert.equal(app.run("p().homework['hw-count']"),true);
  assert.ok(app.nodes.app.innerHTML.includes('משחקים נוספים'));
+});
+
+test('every verified Sanskrit notebook expression has a dedicated question',()=>{
+ const app=setup();
+ const expected=["Ashtanga","Tristhana","Bandha","Ujjayi","Drishti","Ahimsa","Vinyasa","Surya Namaskara A","Samasthitihi","Ekam","Dve","Trini","Chatvari","Pancha","Shat","Sapta","Ashtau","Nava","Urdhva Hastasana","Uttanasana","Ardha Uttanasana","Chaturanga Dandasana","Urdhva Mukha Svanasana","Adho Mukha Svanasana","Bhujangasana","Adho","Urdhva","Ardha","Mukha","Svana","Asana","Bhujanga","Yoga","Sthira","Sukha","Sthira Sukham","Sadhana","Sutra","Pada","Samadhi Pada","Sadhana Pada","Vibhuti Pada","Kaivalya Pada","Purusha","Prakriti","Vritti"];
+ const found=app.run("questions().filter(q=>q.id.startsWith('sk')&&q.topic==='סנסקריט')");
+ assert.equal(found.length,46);
+ const names=found.map(q=>q.sanskrit);
+ assert.equal(new Set(names).size,expected.length);
+ assert.equal(names.sort().join('|'),expected.sort().join('|'));
+ assert.ok(found.every(q=>q.options.length===4&&q.answer>=0&&q.answer<4&&q.why&&q.lesson));
+});
+test('Sanskrit practice can cover every expression in one run',()=>{
+ const app=setup();
+ const count=app.run("questions().filter(q=>q.topic==='סנסקריט').length");
+ assert.ok(count>=46);
+ app.run("begin('סנסקריט',true)");
+ assert.equal(app.run('session.items.length'),count);
+ assert.equal(app.run("session.items.every(q=>q.topic==='סנסקריט')"),true);
+ const ids=app.run("session.items.filter(q=>q.id.startsWith('sk')).map(q=>q.id)");
+ assert.equal(ids.length,46);
 });
