@@ -204,7 +204,7 @@ function coverageMap(){
   const uc=unit.facets.filter(f=>coverageFacetIds(f).length>0).length;
   return '<details class="coverage-unit"><summary><span><b>'+esc(unit.title)+'</b><small>'+uc+' מתוך '+unit.facets.length+' סעיפים עם שאלות</small></span><span aria-hidden="true">⌄</span></summary><div class="coverage-facets">'+unit.facets.map(f=>{
    const ids=coverageFacetIds(f),present=ids.length>0;
-   return '<div class="coverage-facet"><span class="coverage-dot '+(present?'has':'missing')+'">'+(present?'✓':'–')+'</span><div><b>'+esc(f.name)+'</b><small>'+(present?ids.length+' שאלות טריוויה משויכות':'אין עדיין שאלת טריוויה ממוקדת')+'</small></div></div>';
+   return '<div class="coverage-facet"><span class="coverage-dot '+(present?'has':'missing')+'">'+(present?'✓':'–')+'</span><div><b>'+esc(f.name)+'</b><small>'+(present?ids.length+' שאלות טריוויה משויכות':(f.id==='unit-8-2'?'דורש אימות של כתב היד לפני הוספת שאלה':'אין עדיין שאלת טריוויה ממוקדת'))+'</small></div></div>';
   }).join('')+'</div></details>'
  }).join('')+'</section>';
  }).join('');
