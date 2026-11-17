@@ -30,7 +30,7 @@ test('all modes render, and poses include adjustment scenarios',()=>{
     assert.equal(app.run('special.mode'),mode);
     assert.ok(app.nodes.app.innerHTML.length>0);
   }
-  assert.equal(app.run('POSE_SCENARIOS.length'),3);
+  assert.equal(app.run('POSE_SCENARIOS.length'),9);
 });
 test('correct answers schedule future review, errors reschedule soon',()=>{
   const app=setup();
@@ -125,7 +125,7 @@ test('mixed quiz balances topics and shuffles answer positions',()=>{
 
 test('Friday 13 November questions are present and cover the four padas',()=>{
  const app=setup();
- assert.equal(app.run("questions().filter(q=>q.lesson==='13.11.2026').length"),17);
+ assert.equal(app.run("questions().filter(q=>q.lesson==='13.11.2026').length"),25);
  for(const term of ['סמאדהי','סדהנה','ויבהוטי','קאיווליה']){
   assert.ok(app.run("questions().some(q=>q.id.startsWith('f13') && (q.q.includes("+JSON.stringify(term)+") || q.options.some(o=>o.includes("+JSON.stringify(term)+"))))"));
  }
@@ -140,7 +140,7 @@ test('Friday lesson can be practiced independently',()=>{
 
 test('Tuesday lesson can be practiced independently with preserved original and new questions',()=>{
  const app=setup();
- assert.equal(app.run("questions().filter(q=>q.lesson==='10.11.2026').length"),56);
+ assert.equal(app.run("questions().filter(q=>q.lesson==='10.11.2026').length"),84);
  app.run("begin('lesson:10.11.2026')");
  assert.equal(app.run('session.items.length'),10);
  assert.equal(app.run("session.items.every(q=>q.lesson==='10.11.2026')"),true);
