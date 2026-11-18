@@ -10,7 +10,9 @@ function questions(){return [...INITIAL,...data.extra].map(q=>({...q,lesson:q.le
 function level(){return Math.floor(p().xp/100)+1}function sinceLevel(){return p().xp%100}
 function selectTab(t){if(t==='coverage')t='progress';if(session&&!session.done)persistQuiz();if(cardSession&&!cardSession.done)persistCards();tab=t;session=null;special=null;cardSession=null;render()}function stats(){return `<div class="stats"><div><b>🔥 ${p().streak}</b><small>ימי רצף</small></div><div><b>✨ ${p().xp}</b><small>XP שנצבר</small></div><div><b>${p().answered?Math.round(100*p().correct/p().answered):0}%</b><small>תשובות נכונות</small></div></div>`}
 
-const LESSON_CHOICES=LESSON_NOTES.map(lesson=>({date:lesson.date,label:lesson.day+' · '+lesson.date.slice(0,5),sub:lesson.title}));
+function lessonDateValue(date){const [day,month,year]=date.split('.').map(Number);return year*10000+month*100+day}
+function recentLessons(){return [...LESSON_NOTES].sort((a,b)=>lessonDateValue(b.date)-lessonDateValue(a.date))}
+const LESSON_CHOICES=recentLessons().map(lesson=>({date:lesson.date,label:lesson.day+' · '+lesson.date.slice(0,5),sub:lesson.title}));
 function openPractice(kind){
  practicePick={kind,topic:null};tab='practice-pick';session=null;special=null;render();
 }
@@ -211,7 +213,7 @@ function cardsView(){
 function library(){
  return '<h1>ספריית שיעורים</h1><p class="muted">סיכומים מהמחברת לפי תאריך, עם אפשרות לתרגל את החומר של כל שיעור.</p>'+
  '<div class="card"><div class="row"><div><b>כרטיסיות סנסקריט</b><p class="muted">'+SANSKRIT_CARDS.length+' מונחים · שני כיווני תרגול</p></div><button class="btn secondary small" onclick="selectTab(\'cards\')">פתיחה</button></div></div>'+
- LESSON_NOTES.map(lesson=>{
+ recentLessons().map(lesson=>{
  const count=questions().filter(q=>q.lesson===lesson.date).length;
  return '<div class="card lesson-card"><h2>'+esc(lesson.day+' · '+lesson.date)+'</h2><b>'+esc(lesson.title)+'</b><p class="footnote">'+esc(lesson.source)+'</p>'+
  '<p class="muted">'+count+' שאלות משויכות לשיעור</p>'+
