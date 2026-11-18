@@ -23,7 +23,7 @@ test('original questions and profiles remain available',()=>{
   const original={active:'אני',profiles:{'אני':{xp:80,streak:2,lastDay:null,answered:10,correct:8,history:{c01:{correct:2,wrong:1}},days:{}}},extra:[]};
   const app=setup({'yoga-quest-v1':JSON.stringify(original)});
   assert.equal(app.run('p().xp'),80);
-  assert.equal(app.run('questions().length'),178);
+  assert.equal(app.run('questions().length'),221);
   assert.equal(app.run('p().history.c01.correct'),2);
 });
 test('all modes render, and poses include adjustment scenarios',()=>{
@@ -155,9 +155,9 @@ test('Tuesday lesson can be practiced independently with preserved original and 
 
 test('expanded course materials and mini-games have broader coverage',()=>{
  const app=setup();
- assert.equal(app.run('PAIRS.length'),25);
- assert.equal(app.run('FILLS.length'),18);
- assert.equal(app.run('ORDERS.length'),7);
+ assert.equal(app.run('PAIRS.length'),35);
+ assert.equal(app.run('FILLS.length'),28);
+ assert.equal(app.run('ORDERS.length'),11);
  assert.equal(app.run('POSES.length'),7);
  assert.equal(app.run('POSE_SCENARIOS.length'),9);
  assert.equal(app.run("questions().filter(q=>q.id.startsWith('exp')).length"),36);
@@ -197,7 +197,7 @@ test('coverage map shows both lessons and identifies explicit gaps without confl
  assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
  app.run("selectTab('progress')");
  assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
- assert.equal(app.run('coverageTotals().total'),51);
+ assert.equal(app.run('coverageTotals().total'),66);
 });
 test('each mapped item only counts existing question IDs',()=>{
  const app=setup();
@@ -207,9 +207,9 @@ test('each mapped item only counts existing question IDs',()=>{
 test('new source-backed questions fill 11 of 12 previously unmapped facets',()=>{
  const app=setup();
  const t=app.run('coverageTotals()');
- assert.equal(t.total,51);
+ assert.equal(t.total,66);
  assert.equal(t.missing,1);
- assert.equal(t.covered,50);
+ assert.equal(t.covered,65);
  assert.equal(app.run("questions().filter(q=>q.id.startsWith('gap')).length"),13);
  assert.equal(app.run("questions().filter(q=>q.id.startsWith('gap')).every(q=>q.options.length===4 && q.coverageId)"),true);
  assert.equal(app.run("COVERAGE_UNITS.filter(u=>u.lesson==='13.11.2026').flatMap(u=>u.facets).filter(f=>coverageFacetIds(f).length===0).map(f=>f.id).join(',')"),'unit-8-2');
@@ -254,7 +254,7 @@ test('mixed full mode includes every quiz question once, with fresh order',()=>{
 });
 test('coverage map remains available for internal verification but hidden in navigation',()=>{
  const app=setup();
- assert.equal(app.run('coverageTotals().total'),51);
+ assert.equal(app.run('coverageTotals().total'),66);
  app.run("selectTab('coverage')");
  assert.equal(app.run('tab'),'progress');
  assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
@@ -312,7 +312,7 @@ test('lesson and mixed pickers offer full-length practice without home duplicati
  app.run("begin('mixed',20)");
  assert.equal(app.run('session.items.length'),20);
  app.run("begin('mixed',true)");
- assert.equal(app.run('session.items.length'),178);
+ assert.equal(app.run('session.items.length'),221);
 });
 test('game access and saved progress survive home redesign',()=>{
  const app=setup();
@@ -377,7 +377,7 @@ test('completed quiz clears resumable state but keeps XP',()=>{
 });
 test('Sanskrit cards support both directions and saved progress',()=>{
  const app=setup();
- assert.equal(app.run('SANSKRIT_CARDS.length'),46);
+ assert.equal(app.run('SANSKRIT_CARDS.length'),57);
  app.run("startCards('sanskrit')");
  assert.equal(app.run('tab'),'cards');
  assert.ok(app.nodes.app.innerHTML.includes('סנסקריט → עברית'));
@@ -421,4 +421,30 @@ test('homework checklist matches instructor screenshot without unrelated legacy 
  }
  app.run("toggleHomework('hw-count')");
  assert.equal(app.run("p().homework['hw-count']"),true);
+});
+
+test('17 November sourced lesson is in library, picker and question bank',()=>{
+ const app=setup();
+ assert.equal(app.run("LESSON_NOTES.find(l=>l.date==='17.11.2026').sections.length"),5);
+ assert.equal(app.run("questions().filter(q=>q.lesson==='17.11.2026').length"),43);
+ app.run("openPractice('lesson')");
+ assert.ok(app.nodes.app.innerHTML.includes('17.11'));
+ app.run("selectTab('library')");
+ const v=app.nodes.app.innerHTML;
+ for(const word of ['17.11.2026','ברכת השמש B','APT','PPT','תמיכות במגע','השלמה לימודית'])assert.ok(v.includes(word),word);
+ app.run("begin('lesson:17.11.2026',true)");
+ assert.equal(app.run('session.items.length'),43);
+ assert.ok(app.run("session.items.every(q=>q.lesson==='17.11.2026')"));
+});
+test('lesson 17 quiz and games clearly distinguish course note from educational completions',()=>{
+ const app=setup();
+ const qs=app.run("questions().filter(q=>q.lesson==='17.11.2026')");
+ assert.equal(new Set(qs.map(q=>q.id)).size,43);
+ assert.ok(qs.every(q=>q.options.length===4&&q.answer>=0&&q.answer<4));
+ assert.ok(qs.some(q=>q.why.includes('השלמה לימודית')));
+ assert.ok(app.run("ORDERS.some(o=>o.q.includes('ברכת השמש B'))"));
+ assert.ok(app.run("FILLS.some(f=>f.q.includes('Shodasha'))"));
+ assert.equal(app.run("SANSKRIT_CARDS.filter(c=>/^sk0(4[7-9]|5[0-7])$/.test(c.id)).length"),11);
+ const ids=app.run("COVERAGE_UNITS.filter(u=>u.lesson==='17.11.2026').flatMap(u=>u.facets).flatMap(f=>f.ids)");
+ assert.ok(ids.every(id=>qs.some(q=>q.id===id)));
 });
