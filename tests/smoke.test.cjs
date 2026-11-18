@@ -49,11 +49,11 @@ test('correct answers schedule future review, errors reschedule soon',()=>{
 });
 test('fill-in, ordering and image modes record answers',()=>{
   const app=setup();
-  app.run("startSpecial('fill');special.items=[FILLS[0]];special.index=0");
+  app.run("startSpecial('fill');special.items=[FILLS.find(f=>f.q.includes('Adho'))];special.index=0");
   app.nodes.fillAnswer.value='למטה';
   app.run('submitFill()');
   assert.equal(app.run('special.feedback.ok'),true);
-  app.run("startSpecial('order');special.items=[ORDERS[0]];special.index=0");
+  app.run("startSpecial('order');special.items=[ORDERS.find(o=>o.id==='c18'&&o.a.length===3)];special.index=0");
   app.run('chooseOrder(0);chooseOrder(1);chooseOrder(2);confirmOrder()');
   assert.equal(app.run('special.feedback.ok'),true);
   app.run("startSpecial('image');special.items=[POSE_SCENARIOS[0]];special.index=0");
@@ -77,7 +77,7 @@ test('matching selections are reversible until explicitly checked',()=>{
 });
 test('ordering can undo and reset without grading',()=>{
  const app=setup();
- app.run("startSpecial('order');special.items=[ORDERS[0]];special.index=0");
+ app.run("startSpecial('order');special.items=[ORDERS.find(o=>o.id==='c18'&&o.a.length===3)];special.index=0");
  app.run("chooseOrder(0);chooseOrder(1);undoOrder()");
  assert.equal(app.run('special.selected.length'),1);
  assert.equal(app.run('p().answered'),0);
