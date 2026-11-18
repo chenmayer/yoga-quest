@@ -448,3 +448,16 @@ test('lesson 17 quiz and games clearly distinguish course note from educational 
  const ids=app.run("COVERAGE_UNITS.filter(u=>u.lesson==='17.11.2026').flatMap(u=>u.facets).flatMap(f=>f.ids)");
  assert.ok(ids.every(id=>qs.some(q=>q.id===id)));
 });
+
+test('lessons appear newest first in library and lesson picker',()=>{
+ const app=setup();
+ assert.equal(app.run("recentLessons().map(l=>l.date).join(',')"),"17.11.2026,13.11.2026,10.11.2026");
+ app.run("selectTab('library')");
+ const html=app.nodes.app.innerHTML;
+ assert.ok(html.indexOf('17.11.2026')<html.indexOf('13.11.2026'));
+ assert.ok(html.indexOf('13.11.2026')<html.indexOf('10.11.2026'));
+ app.run("openPractice('lesson')");
+ const picker=app.nodes.app.innerHTML;
+ assert.ok(picker.indexOf('17.11')<picker.indexOf('13.11'));
+ assert.ok(picker.indexOf('13.11')<picker.indexOf('10.11'));
+});
