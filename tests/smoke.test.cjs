@@ -546,7 +546,7 @@ test('Sanskrit name to diagram and typed recall are independent',()=>{
  app.nodes.poseTyping={value:correct};
  app.run('submitPoseAnswer()');
  assert.equal(app.run('poseTraining.feedback.ok'),true);
- assert.equal(app.run('p().poseStats[id]["type-name"].correct'),1);
+ assert.equal(app.run('p().poseStats['+JSON.stringify(id)+']["type-name"].correct'),1);
  assert.ok(app.run("poseNameMatches(ASANA_LIBRARY.find(x=>x.id==='virabhadrasana-a'),'Virabhadrasana I')"));
 });
 test('pose progress and unfinished training survive reload',()=>{
