@@ -8,7 +8,7 @@ function fresh(){return {xp:0,streak:0,lastDay:null,answered:0,correct:0,history
 function save(){localStorage.setItem(KEY,JSON.stringify(data))}function p(){const profile=data.profiles[data.active];profile.homework ||= {};return profile}
 function questions(){return [...INITIAL,...data.extra].map(q=>({...q,lesson:q.lesson||(/^(c\d{2}|n1\d{2})$/.test(q.id)?'10.11.2026':undefined)}))}const topics=['סנסקריט','פילוסופיה','הוראה ואליינמנט','ויניאסה ונשימה'];const symbols={'סנסקריט':'🔤','פילוסופיה':'🧠','הוראה ואליינמנט':'🧘','ויניאסה ונשימה':'🔁'};
 function level(){return Math.floor(p().xp/100)+1}function sinceLevel(){return p().xp%100}
-function selectTab(t){if(t==='coverage')t='progress';if(session&&!session.done)persistQuiz();if(cardSession&&!cardSession.done)persistCards();tab=t;session=null;special=null;cardSession=null;render()}function stats(){return `<div class="stats"><div><b>🔥 ${p().streak}</b><small>ימי רצף</small></div><div><b>✨ ${p().xp}</b><small>XP שנצבר</small></div><div><b>${p().answered?Math.round(100*p().correct/p().answered):0}%</b><small>תשובות נכונות</small></div></div>`}
+function selectTab(t){if(t==='coverage')t='progress';if(session&&!session.done)persistQuiz();if(cardSession&&!cardSession.done)persistCards();if(poseTraining&&!poseTraining.done)persistPosePractice();tab=t;session=null;special=null;cardSession=null;render()}function stats(){return `<div class="stats"><div><b>🔥 ${p().streak}</b><small>ימי רצף</small></div><div><b>✨ ${p().xp}</b><small>XP שנצבר</small></div><div><b>${p().answered?Math.round(100*p().correct/p().answered):0}%</b><small>תשובות נכונות</small></div></div>`}
 
 function lessonDateValue(date){const [day,month,year]=date.split('.').map(Number);return year*10000+month*100+day}
 function recentLessons(){return [...LESSON_NOTES].sort((a,b)=>lessonDateValue(b.date)-lessonDateValue(a.date))}
@@ -51,8 +51,8 @@ function home(){
  '<button class="modetile" onclick="openPractice(\'mixed\')"><span class="mode-icon">⇄</span><b>תרגול מעורב</b><small>כל הנושאים, בסדר אקראי</small></button>'+
  '<button class="modetile" onclick="openPractice(\'topic\')"><span class="mode-icon">▤</span><b>לפי נושא</b><small>סנסקריט, פילוסופיה ועוד</small></button>'+
  '<button class="modetile" onclick="openPractice(\'lesson\')"><span class="mode-icon">◷</span><b>לפי שיעור</b><small>בחירה לפי תאריך</small></button></div>'+
- '<details class="card extra-games"><summary>משחקים נוספים <span class="extra-caret" aria-hidden="true">⌄</span></summary><p class="muted">כרטיסיות סנסקריט · התאמות · השלמות · רצפים · זיהוי תנוחות</p>'+
- '<div class="game-links"><button class="game-link" onclick="selectTab(\'cards\')">כרטיסיות סנסקריט</button><button class="game-link" onclick="startSpecial(\'match\')">התאמות</button><button class="game-link" onclick="startSpecial(\'fill\')">השלמות</button><button class="game-link" onclick="startSpecial(\'order\')">סידור רצף</button><button class="game-link" onclick="startSpecial(\'image\')">זיהוי תנוחות</button></div></details>'+
+ '<details class="card extra-games"><summary>משחקים נוספים <span class="extra-caret" aria-hidden="true">⌄</span></summary><p class="muted">שמות תנוחות · כרטיסיות סנסקריט · התאמות · השלמות · רצפים</p>'+
+ '<div class="game-links"><button class="game-link" onclick="selectTab(\'pose-practice\')">שמות תנוחות</button><button class="game-link" onclick="selectTab(\'cards\')">כרטיסיות סנסקריט</button><button class="game-link" onclick="startSpecial(\'match\')">התאמות</button><button class="game-link" onclick="startSpecial(\'fill\')">השלמות</button><button class="game-link" onclick="startSpecial(\'order\')">סידור רצף</button><button class="game-link" onclick="startSpecial(\'image\')">זיהוי תנוחות</button></div></details>'+
  '<div class="card compact-review"><div class="row"><div><b>חזרה מתוזמנת</b><p class="muted">'+dueCount()+' שאלות לחזרה</p></div><button class="btn secondary small" onclick="begin(\'due\')" '+(dueCount()?'':'disabled')+'>תרגול</button></div></div>'+
  '<p class="footnote">ההתקדמות נשמרת בדפדפן במכשיר הזה בלבד.</p>';
 }
@@ -212,6 +212,7 @@ function cardsView(){
 
 function library(){
  return '<h1>ספריית שיעורים</h1><p class="muted">סיכומים מהמחברת לפי תאריך, עם אפשרות לתרגל את החומר של כל שיעור.</p>'+
+ '<div class="card"><div class="row"><div><b>ספריית תנוחות וסנסקריט</b><p class="muted">'+ASANA_LIBRARY.length+' תנוחות · 3 סוגי תרגול</p></div><button class="btn secondary small" onclick="selectTab(\'pose-practice\')">פתיחה</button></div></div>'+ 
  '<div class="card"><div class="row"><div><b>כרטיסיות סנסקריט</b><p class="muted">'+SANSKRIT_CARDS.length+' מונחים · שני כיווני תרגול</p></div><button class="btn secondary small" onclick="selectTab(\'cards\')">פתיחה</button></div></div>'+
  recentLessons().map(lesson=>{
  const count=questions().filter(q=>q.lesson===lesson.date).length;
@@ -233,7 +234,7 @@ function questionList(t){return questions().filter(q=>t==='all'||q.topic===t).ma
 function filterLibrary(t){document.getElementById('libraryList').innerHTML=questionList(t)}
 function download(what){let payload=what==='backup'?{version:1,exportedAt:new Date().toISOString(),data}:questions();let blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=what==='backup'?'yogaquest-backup.json':'yogaquest-questions.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 async function importQuestions(input){const file=input.files?.[0];if(!file)return;try{const parsed=JSON.parse(await file.text());if(!Array.isArray(parsed))throw Error('הקובץ חייב להכיל מערך שאלות');const current=new Set(questions().map(q=>q.id));let add=[];for(const q of parsed){if(typeof q.id!=='string'||!q.id.trim()||typeof q.q!=='string'||typeof q.why!=='string'||!topics.includes(q.topic)||!['course','extra'].includes(q.source)||!Array.isArray(q.options)||q.options.length!==4||q.options.some(o=>typeof o!=='string')||!Number.isInteger(q.answer)||q.answer<0||q.answer>3)throw Error('לפחות שאלה אחת חסרה שדות או אינה בפורמט תקין');if(!current.has(q.id)){add.push(q);current.add(q.id)}}data.extra.push(...add);save();importStatus=`נוספו ${add.length} שאלות חדשות בהצלחה`;render()}catch(e){importStatus='הייבוא נכשל: '+e.message;render()}}
-function render(){document.getElementById('app').innerHTML=`<div class="top"><div class="brand"><div class="logo">ॐ</div><div><strong>Yoga Quest</strong></div></div><span class="pill">👤 ${esc(data.active)}</span></div>${tab==='home'?home():tab==='practice-pick'?practicePicker():tab==='quiz'?quiz():tab==='cards'?cardsView():tab==='special'?specialView():tab==='progress'?progress():tab==='community'?community():tab==='homework'?homeworkView():library()}<nav class="tabs" aria-label="ניווט">${[['home','⌂','בית'],['progress','◫','התקדמות'],['homework','☑','שיעורי בית'],['community','♧','קהילה'],['library','▤','שיעורים']].map(([t,ic,name])=>`<button onclick="selectTab('${t}')" class="${tab===t||tab==='quiz'&&t==='home'||tab==='practice-pick'&&t==='home'||tab==='cards'&&t==='home'?'active':''}"><span class="ico">${ic}</span>${name}</button>`).join('')}</nav>`}
+function render(){document.getElementById('app').innerHTML=`<div class="top"><div class="brand"><div class="logo">ॐ</div><div><strong>Yoga Quest</strong></div></div><span class="pill">👤 ${esc(data.active)}</span></div>${tab==='home'?home():tab==='practice-pick'?practicePicker():tab==='quiz'?quiz():tab==='cards'?cardsView():tab==='pose-practice'?posePracticeView():tab==='special'?specialView():tab==='progress'?progress():tab==='community'?community():tab==='homework'?homeworkView():library()}<nav class="tabs" aria-label="ניווט">${[['home','⌂','בית'],['progress','◫','התקדמות'],['homework','☑','שיעורי בית'],['community','♧','קהילה'],['library','▤','שיעורים']].map(([t,ic,name])=>`<button onclick="selectTab('${t}')" class="${tab===t||tab==='quiz'&&t==='home'||tab==='practice-pick'&&t==='home'||tab==='cards'&&t==='home'||tab==='pose-practice'&&t==='library'?'active':''}"><span class="ico">${ic}</span>${name}</button>`).join('')}</nav>`}
 
 /* Yoga Quest 1.1: review scheduling and additional practice modes.
    All existing localStorage profile keys and question IDs are preserved. */
@@ -313,6 +314,9 @@ function nextSpecial(){
 }
 function poseSvg(type){
  const lines={
+ standing:'<path d="M145 160 L145 92 M145 92 L120 135 M145 92 L170 135 M145 160 L130 182 M145 160 L160 182"/><circle cx="145" cy="75" r="12"/>',
+ chair:'<path d="M128 154 L147 112 L161 138 L177 181 M147 112 L130 84 L119 45 M147 112 L159 78 L174 41 M128 154 L110 184"/><circle cx="143" cy="70" r="12"/>',
+ warrior:'<path d="M89 176 L125 123 L171 153 L212 183 M125 123 L132 75 M132 75 L118 40 M132 75 L151 39"/><circle cx="133" cy="58" r="12"/>',
  dog:'<path d="M57 157 L100 64 L170 145 M100 64 L175 64 L225 155 M100 64 L85 47" /><circle cx="82" cy="41" r="10"/>',
  up:'<path d="M145 160 L145 92 M145 92 L130 40 M145 92 L160 40 M145 160 L128 180 M145 160 L162 180"/><circle cx="145" cy="77" r="12"/>',
  cobra:'<path d="M40 160 Q98 170 145 157 Q165 150 170 123 L170 85 M145 157 L190 160 M170 123 L193 152 M170 123 L153 151"/><circle cx="170" cy="68" r="13"/>',
