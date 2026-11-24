@@ -543,7 +543,7 @@ test('Sanskrit name to diagram and typed recall are independent',()=>{
  assert.ok(app.nodes.app.innerHTML.includes('הקלידי בסנסקריט'));
  const id=app.run('poseTraining.items[0].id');
  const correct=app.run('ASANA_LIBRARY.find(x=>x.id===poseTraining.items[0].id).sk');
- app.nodes.poseTyping.value=correct;
+ app.nodes.poseTyping={value:correct};
  app.run('submitPoseAnswer()');
  assert.equal(app.run('poseTraining.feedback.ok'),true);
  assert.equal(app.run('p().poseStats[id]["type-name"].correct'),1);
