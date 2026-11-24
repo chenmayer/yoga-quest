@@ -23,7 +23,7 @@ test('original questions and profiles remain available',()=>{
   const original={active:'אני',profiles:{'אני':{xp:80,streak:2,lastDay:null,answered:10,correct:8,history:{c01:{correct:2,wrong:1}},days:{}}},extra:[]};
   const app=setup({'yoga-quest-v1':JSON.stringify(original)});
   assert.equal(app.run('p().xp'),80);
-  assert.equal(app.run('questions().length'),221);
+  assert.equal(app.run('questions().length'),250);
   assert.equal(app.run('p().history.c01.correct'),2);
 });
 test('all modes render, and poses include adjustment scenarios',()=>{
@@ -155,8 +155,8 @@ test('Tuesday lesson can be practiced independently with preserved original and 
 
 test('expanded course materials and mini-games have broader coverage',()=>{
  const app=setup();
- assert.equal(app.run('PAIRS.length'),35);
- assert.equal(app.run('FILLS.length'),28);
+ assert.equal(app.run('PAIRS.length'),41);
+ assert.equal(app.run('FILLS.length'),34);
  assert.equal(app.run('ORDERS.length'),11);
  assert.equal(app.run('POSES.length'),7);
  assert.equal(app.run('POSE_SCENARIOS.length'),9);
@@ -197,7 +197,7 @@ test('coverage map shows both lessons and identifies explicit gaps without confl
  assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
  app.run("selectTab('progress')");
  assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
- assert.equal(app.run('coverageTotals().total'),66);
+ assert.equal(app.run('coverageTotals().total'),78);
 });
 test('each mapped item only counts existing question IDs',()=>{
  const app=setup();
@@ -207,9 +207,9 @@ test('each mapped item only counts existing question IDs',()=>{
 test('new source-backed questions fill 11 of 12 previously unmapped facets',()=>{
  const app=setup();
  const t=app.run('coverageTotals()');
- assert.equal(t.total,66);
+ assert.equal(t.total,78);
  assert.equal(t.missing,1);
- assert.equal(t.covered,65);
+ assert.equal(t.covered,77);
  assert.equal(app.run("questions().filter(q=>q.id.startsWith('gap')).length"),13);
  assert.equal(app.run("questions().filter(q=>q.id.startsWith('gap')).every(q=>q.options.length===4 && q.coverageId)"),true);
  assert.equal(app.run("COVERAGE_UNITS.filter(u=>u.lesson==='13.11.2026').flatMap(u=>u.facets).filter(f=>coverageFacetIds(f).length===0).map(f=>f.id).join(',')"),'unit-8-2');
@@ -254,7 +254,7 @@ test('mixed full mode includes every quiz question once, with fresh order',()=>{
 });
 test('coverage map remains available for internal verification but hidden in navigation',()=>{
  const app=setup();
- assert.equal(app.run('coverageTotals().total'),66);
+ assert.equal(app.run('coverageTotals().total'),78);
  app.run("selectTab('coverage')");
  assert.equal(app.run('tab'),'progress');
  assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
@@ -312,7 +312,7 @@ test('lesson and mixed pickers offer full-length practice without home duplicati
  app.run("begin('mixed',20)");
  assert.equal(app.run('session.items.length'),20);
  app.run("begin('mixed',true)");
- assert.equal(app.run('session.items.length'),221);
+ assert.equal(app.run('session.items.length'),250);
 });
 test('game access and saved progress survive home redesign',()=>{
  const app=setup();
@@ -377,7 +377,7 @@ test('completed quiz clears resumable state but keeps XP',()=>{
 });
 test('Sanskrit cards support both directions and saved progress',()=>{
  const app=setup();
- assert.equal(app.run('SANSKRIT_CARDS.length'),57);
+ assert.equal(app.run('SANSKRIT_CARDS.length'),63);
  app.run("startCards('sanskrit')");
  assert.equal(app.run('tab'),'cards');
  assert.ok(app.nodes.app.innerHTML.includes('סנסקריט → עברית'));
@@ -451,7 +451,7 @@ test('lesson 17 quiz and games clearly distinguish course note from educational 
 
 test('lessons appear newest first in library and lesson picker',()=>{
  const app=setup();
- assert.equal(app.run("recentLessons().map(l=>l.date).join(',')"),"17.11.2026,13.11.2026,10.11.2026");
+ assert.equal(app.run("recentLessons().map(l=>l.date).join(',')"),"20.11.2026,17.11.2026,13.11.2026,10.11.2026");
  app.run("selectTab('library')");
  const html=app.nodes.app.innerHTML;
  assert.ok(html.indexOf('17.11.2026')<html.indexOf('13.11.2026'));
@@ -460,4 +460,42 @@ test('lessons appear newest first in library and lesson picker',()=>{
  const picker=app.nodes.app.innerHTML;
  assert.ok(picker.indexOf('17.11')<picker.indexOf('13.11'));
  assert.ok(picker.indexOf('13.11')<picker.indexOf('10.11'));
+});
+
+test('Friday 20 November is newest and sourced notes are in lesson library',()=>{
+ const app=setup();
+ assert.equal(app.run("recentLessons()[0].date"),'20.11.2026');
+ const lesson=app.run("LESSON_NOTES.find(x=>x.date==='20.11.2026')");
+ assert.equal(lesson.sections.length,4);
+ assert.ok(lesson.sections.some(s=>s.title.includes('ויראגיה')));
+ app.run("selectTab('library')");
+ const html=app.nodes.app.innerHTML;
+ for(const term of ['20.11.2026','ראג׳ס','טמאס','סטווה','סו־הם','אבהיאסה','ויראגיה'])assert.ok(html.includes(term),term);
+ assert.ok(html.indexOf('20.11.2026')<html.indexOf('17.11.2026'));
+ app.run("openPractice('lesson')");
+ assert.ok(app.nodes.app.innerHTML.indexOf('20.11')<app.nodes.app.innerHTML.indexOf('17.11'));
+});
+test('Friday 20 November quiz and Sanskrit deck are complete and unique',()=>{
+ const app=setup();
+ const qs=app.run("questions().filter(q=>q.lesson==='20.11.2026')");
+ assert.equal(qs.length,29);
+ assert.equal(new Set(qs.map(q=>q.id)).size,29);
+ assert.ok(qs.every(q=>q.answer>=0&&q.answer<4&&q.options.length===4));
+ app.run("begin('lesson:20.11.2026',true)");
+ assert.equal(app.run('session.items.length'),29);
+ assert.ok(app.run("session.items.every(q=>q.lesson==='20.11.2026')"));
+ assert.equal(app.run("SANSKRIT_CARDS.filter(c=>/^sk0(5[8-9]|6[0-3])$/.test(c.id)).length"),6);
+ assert.ok(app.run("PAIRS.some(x=>x[0]==='Vairāgya')"));
+ assert.ok(app.run("FILLS.some(x=>x.q.includes('So’ham'))"));
+});
+test('Friday lesson coverage map remains internal and maps to actual questions',()=>{
+ const app=setup();
+ const f=app.run("COVERAGE_UNITS.filter(u=>u.lesson==='20.11.2026').flatMap(u=>u.facets)");
+ assert.equal(f.length,12);
+ assert.ok(f.every(x=>x.ids.length>0));
+ const ids=f.flatMap(x=>x.ids);
+ const all=app.run("questions().filter(q=>q.lesson==='20.11.2026').map(q=>q.id)");
+ assert.ok(ids.every(id=>all.includes(id)));
+ app.run("selectTab('home')");
+ assert.ok(!app.nodes.app.innerHTML.includes('מפת כיסוי חומר'));
 });
